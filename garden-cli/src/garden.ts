@@ -8,6 +8,7 @@
 
 import Bluebird = require("bluebird")
 import {
+  join,
   parse,
   relative,
   resolve,
@@ -185,29 +186,36 @@ export class Garden {
     this.taskGraph = new TaskGraph(this.pluginContext)
   }
 
-  static async factory(projectRoot: string, { env, config, logger, plugins = [] }: ContextOpts = {}) {
+  static async factory(currentDirectory: string, { env, config, logger, plugins = [] }: ContextOpts = {}) {
     let parsedConfig: GardenConfig
+    let initialDirectory = currentDirectory || []
 
     if (config) {
       parsedConfig = <GardenConfig>validate(config, configSchema, { context: "root configuration" })
 
       if (!parsedConfig.project) {
         throw new ConfigurationError(`Supplied config does not contain a project configuration`, {
-          projectRoot,
+          currentDirectory,
           config,
         })
       }
     } else {
-      config = await loadConfig(projectRoot, projectRoot)
-      parsedConfig = await resolveTemplateStrings(config, new ProjectConfigContext())
-
-      if (!parsedConfig.project) {
-        throw new ConfigurationError(`Path ${projectRoot} does not contain a project configuration`, {
-          projectRoot,
-          config,
-        })
+      let sepCount = (currentDirectory.match(new RegExp(sep, "g")) || []).length
+      for (let i = 0; i < sepCount; i++) {
+        config = await loadConfig(currentDirectory, currentDirectory)
+        if (!config || !config.project) {
+          currentDirectory = join(currentDirectory, "..")
+        } else if (config.project) {
+          break
+        }
+      }
+      if (!config || !config.project) {
+        throw new ConfigurationError(`Not a project directory (or any of the parent directories): ${initialDirectory}`,
+          { initialDirectory })
       }
     }
+
+    parsedConfig = await resolveTemplateStrings(config!, new ProjectConfigContext())
 
     const {
       defaultEnvironment,
@@ -215,7 +223,7 @@ export class Garden {
       name: projectName,
       environmentDefaults,
       sources: projectSources,
-    } = parsedConfig.project
+    } = parsedConfig.project!
 
     if (!env) {
       env = defaultEnvironment
@@ -263,10 +271,10 @@ export class Garden {
       variables: merge({}, environmentDefaults.variables, envConfig.variables),
     }
 
-    const buildDir = await BuildDir.factory(projectRoot)
+    const buildDir = await BuildDir.factory(currentDirectory)
 
     const garden = new Garden(
-      projectRoot,
+      currentDirectory,
       projectName,
       environment,
       namespace,
@@ -781,7 +789,7 @@ export class Garden {
     const path = resolve(this.projectRoot, nameOrLocation)
     const config = await loadConfig(this.projectRoot, path)
 
-    if (!config.module) {
+    if (!config || !config.module) {
       return null
     }
 
