@@ -5,6 +5,8 @@ This project shows how you can configure a TLS certificate to use for local deve
 For the example to work you need to configure a local certificate authority (CA) on your computer for development. We'll use
 [mkcert](https://github.com/FiloSottile/mkcert) for this purpose.
 
+_Note: The source code for this project can be found at: [https://github.com/garden-io/garden/tree/master/examples/local-tls](https://github.com/garden-io/garden/tree/master/examples/local-tls)._
+
 ## Setup
 
 ### Step 1 - Install mkcert

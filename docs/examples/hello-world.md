@@ -8,6 +8,8 @@ In this example, we'll have a practical look at the main characteristics of a Ga
 
 This project contains four configuration files. [This one](https://github.com/garden-io/garden/tree/master/examples/hello-world/garden.yml) for project-wide settings, and three separate ones for each of the modules: [`hello-container`](https://github.com/garden-io/garden/tree/master/examples/hello-world/services/hello-container/garden.yml), [`hello-function`](https://github.com/garden-io/garden/tree/master/examples/hello-world/services/hello-function/garden.yml), and [`hello-npm-package`](https://github.com/garden-io/garden/tree/master/examples/hello-world/libraries/hello-npm-package/garden.yml).
 
+_Note: The source code for this project can be found at: [https://github.com/garden-io/garden/tree/master/examples/hello-world](https://github.com/garden-io/garden/tree/master/examples/hello-world)._
+
 # Configuring dependencies
 
 There are three main types of dependencies we'll be dealing with: build dependencies, runtime dependencies, and test dependencies.

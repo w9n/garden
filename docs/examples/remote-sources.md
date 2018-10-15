@@ -10,6 +10,8 @@ Important concepts:
 
 > Remote _module_: The remote source code for a single Garden module. In this case, the `garden.yml` config file is stored in the main project repository while the module code itself is in the remote repository.
 
+_Note: The source code for this project can be found at: [https://github.com/garden-io/garden/tree/master/examples/remote-sources](https://github.com/garden-io/garden/tree/master/examples/remote-sources)._
+
 ## About
 
 This project is the same as the [multi-container example](https://github.com/garden-io/garden/tree/master/examples/multi-container)—except that in this case the services live in their own repositories. The repositories are:
