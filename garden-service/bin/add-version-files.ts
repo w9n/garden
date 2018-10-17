@@ -8,6 +8,7 @@ import { resolve } from "path"
 import * as Bluebird from "bluebird"
 import { writeFile } from "fs-extra"
 
+// make sure logger is initialized
 try {
   Logger.initialize({ level: LogLevel.info })
 } catch (_) { }
