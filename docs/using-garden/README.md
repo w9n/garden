@@ -14,4 +14,4 @@ Most of the time we want to develop locally, with our project running in Minikub
 
 ## [Hot Reload](./hot-reload.md)
 
-This article discusses how to use hot reload, so that you can update files on the fly, without losing state and without having to destroy and re-create your container.
+This article discusses how to use hot reloading, so that you can update running services on the fly as you make changes to their code, without losing state and without having to destroy and re-create your container.

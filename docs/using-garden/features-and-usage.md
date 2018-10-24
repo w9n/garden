@@ -1,13 +1,13 @@
 # Features and Usage
 
-Now that you've had a glimpse at the basic Garden commands on the [Quick Start](./basics/quick-start.md) guide, and a brief look at the main [Concepts](../basics/concepts.md) we'll be dealing with, let's go through what the typical usage of Garden looks like.
+Now that you've had a glimpse of the basic Garden commands in the [Quick Start](./basics/quick-start.md) guide, and a brief look at the main [Concepts](../basics/concepts.md) we'll be dealing with, let's go through what some typical Garden workflows look like.
 
 ## Starting a new project
 
-For starting a new project with Garden there are two options:
+There are two ways to start a new project with Garden:
 
-- You can create all the configuration files by hand, and for that you should take a look at our [Configuration files](./configuration-files.md) document.
-- Or you can use the `garden create` command—a lot easier.
+- You can create all the configuration files by hand. For that that you should take a look at our [Configuration files](./configuration-files.md) document.
+- Or you can use the `garden create` command—often a lot easier.
 
 ### `garden create`
 
@@ -45,17 +45,17 @@ For a practical example of "gardenifying" an existing project, check out the [Si
 
 Most of the time, the development workflow when using Garden after the configuration files are set is extremely simple: you leave `garden dev` running, and Garden will automatically re-build, re-deploy, and re-test your project as you work on it.
 
-Sometimes though you might prefer to skip the testing step, in which case you can simply use `garden deploy --watch`. This will watch for changes, then build and deploy them, but it'll skip testing.
+Sometimes though, you might prefer to skip the testing step, in which case you can simply use `garden deploy --watch`. This will watch for changes, then build and deploy them, but it'll skip testing.
 
 Another important topic to keep in mind is [inter-service communication](../basics/concepts.md#how-inter-service-communication-works). As previously discussed, your project has multiple services, and they need to talk to each other at some point. That's pretty simple: a service's hostname is simply its name. So a the hostname for a service called `my-service` is simply `http://my-service/`.
 
-For example, the following snippet calls a separate service in the project called `go-service`.
+For example, the following snippet calls a different service in the project called `go-service`.
 
 ```js
 request.get('http://go-service/hello-go').then(message => {res.json({message})})
 ```
 
-Lastly, when things go wrong you should refer to the error logs. That's an `error.log` file in the project root, and the service logs that you can retrieve from the individual pods in your cluster.
+Lastly, when things go wrong you should refer to the error logs. These consist of an `error.log` file in the project root, along with the service logs that you can retrieve from the individual pods in your cluster.
 
 For the latter, you can use the `garden logs` command, followed by the name of the service you'd like to query. For example `garden logs go-service` would fetch the logs for the `go-service` service, while `garden logs go-service,node-service` would fetch the logs for both the `go-service` and the `node-service` services.
 
@@ -70,9 +70,9 @@ For a comprehensive list of providers available in Garden, check out the [Refere
 
 ## Testing and dependencies
 
-Both tests and dependencies are specified in the Garden configuration files.
+Both tests and dependencies are specified in Garden's `garden.yml` configuration files.
 
-Dependencies are a field within the services declaration. Here's a snippet, from our [TLS project](../examples/tls-project.md) example:
+Service dependencies are a field within the services declaration. Here's a snippet, from our [TLS project](../examples/tls-project.md) example:
 
 ```yaml
 module:
@@ -98,12 +98,12 @@ tests:
       - go-service
 ```
 
-Above we're using `npm test` and `npm run integ` for our tests, but they can be anything you'd like. The only constraint is that Garden follows the typical Unix exit codes convention: `0` means success, and any non-zero exit codes represent failures.
+Above we're using `npm test` and `npm run integ` for our tests, but they can be anything you'd like. The only constraint is that Garden follows the typical Unix exit codes convention: `0` means success, and any non-zero exit codes represent failure.
 
 ## Advanced features
 
 For Garden's more advanced features, see the following docs:
 
-- [Hot Reload](./hot-reload.md), for how to update the files in a container without having to restart it and lose state.
+- [Hot Reload](./hot-reload.md), for how to automatically update files in a running container without having to restart it and lose state.
 - [TLS project](../examples/tls-project.md), for—drumroll!—how to set up TLS with Garden.
 - [Remote sources project](../examples/remote-sources.md), for how to integrate multiple remote and local repositories within the same project.

@@ -70,7 +70,7 @@ Above, we've specified the name of our project and configured it to use the loca
 
 ## Module configuration
 
-Now, let's turn to our services. Services live inside [modules](../reference/glossary.md#Module), and each module has it's own `garden.yml` configuration file.
+Now, let's turn to our services. Services live inside [modules](../reference/glossary.md#Module), and each module has its own `garden.yml` configuration file.
 
 We'll start with the module for the `node-service`:
 
@@ -116,7 +116,7 @@ module:
         - path: /hello-node
           port: http
 ```
-The [services](../using-garden/configuration-files.md#Services) directive is specific to container modules, and defines the services exposed by the module. In this case, our containerized Node.js server. The sub-directives tell Garden how to start the service and which ingress endpoints to expose.
+The [services](../using-garden/configuration-files.md#Services) field is specific to container modules, and defines the services exposed by the module. In this case, our containerized Node.js server. The sub-directives tell Garden how to start the service and which ingress endpoints to expose.
 
 ## Deploying
 

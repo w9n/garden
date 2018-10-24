@@ -8,7 +8,7 @@ Please follow the guide for your operating system:
 * [Windows](#windows)
 * [Linux (Manual Installation)](#linux-manual-installation)
 
-And if you decide to use Minikube, please see our [Minikube Instructions](#minikube-instructions) further down this 
+And if you decide to use Minikube, please see our [Minikube Instructions](#minikube-instructions) further down in this 
 document.
 
 ### macOS
@@ -16,7 +16,7 @@ document.
 For Mac, we recommend the following steps to install Garden. You can also follow the manual installation
 steps below if you prefer.
 
-#### Step 1: Install homebrew
+#### Step 1: Install Homebrew
 
 If you haven't already set up homebrew, please follow [their instructions](https://brew.sh/) to set it up.
 
@@ -26,7 +26,7 @@ To install Docker, Kubernetes and kubectl, we strongly recommend Docker for Mac 
 
 _Note: you need to install the **edge version** of Docker for Mac to enable Kubernetes support._
 
-Once installed, open the Docker for Mac preferences, go to the Kubernetes section,
+Once installed, open Docker for Mac's preferences, go to the Kubernetes section,
 tick `Enable Kubernetes` and save. Please refer to their
 [installation guide](https://docs.docker.com/engine/installation/) for details.
 
@@ -58,8 +58,8 @@ The script will check for the following:
 * Whether you have Hyper-V enabled. This is required for _Docker for Windows_. If you do not already have it enabled,
   the script will enable it (you will then need to restart your computer before starting Docker for Windows).
 * Docker - We strongly recommend using the _Edge version_ of
-  [Docker for Windows](https://www.docker.com/docker-windows), which has built-in support for Kubernetes. Garden also supports different configurations of Docker and Kubernetes, using Minikube for example, but
-  Docker for Windows is generally easier to install and configure, and is well supported. The script will check if Docker is
+  [Docker for Windows](https://www.docker.com/docker-windows), which has built-in support for Kubernetes. Garden also supports different configurations of Docker and Kubernetes, using Minikube for example. However,
+Docker for Windows is generally easier to install and configure, and is well supported. The script will check if Docker is
   installed, and whether Kubernetes has been enabled as the default orchestrator.
 * Node.js - The script will install it via Chocolatey if it is missing. _If you already have Node.js
   installed, please make sure it is version 8.x or newer._
@@ -96,7 +96,7 @@ For local Kubernetes, you can use [Minikube](https://github.com/kubernetes/minik
 
 Use your preferred method or package manager to install `node` (version 8.x or higher), `git`, and `rsync`.
 
-On Ubuntu 18, you'd do `sudo apt install git rsync` for Git and rsync.
+On Ubuntu 18, you'd run `sudo apt install git rsync` to install Git and rsync.
 
 To install Node, we recommend using nvm. You can install nvm e.g. by executing the following in a shell:
 ```sh
@@ -119,20 +119,20 @@ To later upgrade to the newest version, run `npm install -g -U garden-cli`.
 
 Garden can be used with [Minikube](https://github.com/kubernetes/minikube) on supported platforms.
 
-_NOTE: We highly recommend using Docker for Mac and Docker for Windows, for macOS and Windows respectively._
+_NOTE: We highly recommend using Docker for Mac and Docker for Windows, on macOS and Windows respectively._
 
 ## Installation
 
 For Minikube installation instructions, please see the [official guide](https://github.com/kubernetes/minikube#installation).
 
-You'll likely also need to install a driver to run the Minikube VM, please follow the
+You'll likely also need to install a driver to run the Minikube VM. Please follow the
 [instructions here](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md)
 and note the name of the driver you use. The driver you choose will likely vary depending on your
 OS/platform. We recommend [hyperkit](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver)
 for macOS and [kvm2](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) on most Linux
-platforms.
+distributions.
 
-Once Minikube and the appropriate driver for your OS is installed, you can start it by running:
+Once Minikube and the appropriate driver for your OS are installed, you can start Minikube by running:
 
 ```sh
 minikube start --vm-driver=<your vm driver>  # e.g. hyperkit on macOS

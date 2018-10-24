@@ -14,7 +14,7 @@ _Note: The source code for this project can be found at: [https://github.com/gar
 
 There are three main types of dependencies we'll be dealing with: build dependencies, runtime dependencies, and test dependencies.
 
-You can think of build dependencies as libraries. For example, our `hello-world/services/hello-container/app.js` file in the `hello-container` module requires the `hello-npm-package` to be imported:
+You can think of build dependencies as libraries—or anything that produces artifacts needed to build the module in question. For example, our `hello-world/services/hello-container/app.js` file in the `hello-container` module requires the `hello-npm-package` to be imported:
 
 ```js
 const hello = require("./libraries/hello-npm-package")
@@ -31,9 +31,9 @@ For `hello-npm-package` to be imported by `hello-container`, of course, it needs
             target: libraries/hello-npm-package/
 ```
 
-_Note: `source` refers to the path on the dependency module being specified, and `target` refers to where it will be accessed from by the dependant module (picture it as a mount directory)._
+_Note: `source` refers to the path within the dependency module being specified, and `target` refers to where it will be copied to in the dependant module (picture it as a mount directory)._
 
-Runtime dependencies, on the other hand, are irrelevant at build time, but required for execution. For example, as we can see on the `app.js` file, the `hello-container` module depends on `hello-function` being up and running:
+Runtime dependencies, on the other hand, are irrelevant at build time, but required for execution. For example, as we can see in the `app.js` file, the `hello-container` module depends on `hello-function` being up and running:
 
 ```js
 const functionEndpoint = process.env.GARDEN_SERVICES_HELLO_FUNCTION_ENDPOINT
@@ -56,7 +56,7 @@ Test dependencies will be covered further ahead.
 
 # Defining ports, endpoints, and health checks
 
-Before we can define our endpoints and health checks we'll to define the ports we'll be working with. For example, below we'll assign the name `http` to port number `8080`:
+Before we can define our endpoints and health checks, we'll have to define the ports we'll be working with. For example, below we'll assign the name `http` to port number `8080`:
 
 ```yml
 module:
@@ -114,7 +114,7 @@ Since Garden is language-agnostic, there aren't any low level requirements about
 - You must be able to execute a command to run your tests.
 - Any non-zero exit codes returned by the command mean your tests have failed, and zero indicates the tests are passing.
 
-The only difference between unit tests and integration tests, then, are that to run the latter you might need other services to be up and running as well. You can specify them as test dependencies.
+The only difference between unit tests and integration tests, then, is that to run the latter you might need other services to be up and running as well. You can specify them as test dependencies.
 
 Here's what it looks like in practice:
 

@@ -36,7 +36,7 @@ Note that only files tracked in version control are synced, e.g. respecting `.gi
 
 If a `source` is specified along with `target`, that subpath in the module's directory is synced to the target instead of the default of syncing the module's top-level directory.
 
-You can configure several such `source`/`target` pairs, but note that the `source` path must be disjoint, i.e. a `source` path may not be a subdirectory of another `source` path within the same module. Here's an example:
+You can configure several such `source`/`target` pairs, but note that the `source` paths must be disjoint, i.e. a `source` path may not be a subdirectory of another `source` path within the same module. Here's an example:
 
 ```yaml
     sync:
@@ -46,4 +46,4 @@ You can configure several such `source`/`target` pairs, but note that the `sourc
         target: /app/bar
 ```
 
-Lastly, `hotReloadCommand` determines which command should be ran inside the container (when deployed with hot reloading enabled). If no `hotReloadCommand` is specified, `command` is also used in hot reload mode.
+Lastly, `hotReloadCommand` determines which command should be run inside the container (when deployed with hot reloading enabled). If no `hotReloadCommand` is specified, `command` is also used in hot reload mode.

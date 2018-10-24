@@ -38,7 +38,7 @@ project:
 ```
 
 The project-wide `garden.yml` defines the project's name, the default configuration used for each
-[environment](../reference/glossary.md#environment) (via the `environmentDefaults` directive), and
+[environment](../reference/glossary.md#environment) (via the `environmentDefaults` field), and
 environment-specific provider configuration. The above only configures a `local` environment, but you could add
 further environments, such as a remote Kubernetes environment.
 
@@ -88,18 +88,18 @@ modules use the same name.
 ### type
 
 A [module](../reference/glossary.md#module)'s `type` specifies what kind of module this is, which will control how the
-module's code gets built, tested, deployed, etc. The module types are defined by _providers_. The built-in providers
+module's code gets built, tested, deployed, etc. The module types are implemented by _providers_. The built-in module types
 include `container` and `generic` (which basically provides a way to run commands locally).
 
 The example above is a `container` module, and the `hello-function` module is an `openfaas` module
 (which is one of many ways to run functions-as-a-service on Kubernetes).
 
-In this particular project, the `container` module type is deployed by the `local-kubernetes` provider, and the
-`openfaas` module is built and deployed by the corresponding `openfaas` provider.
+In this particular project, the `container` module type is implemented by the `local-kubernetes` provider, and the
+`openfaas` module is implemented by the corresponding `openfaas` provider.
 
 ### build
 
-A module's build configuration is specified via the `build` directive, and the implementation of what `build` does varies depending on which provider is responsible for that module.
+A module's build configuration is specified via the `build` field, and the implementation of what `build` does varies depending on which provider is responsible for that module.
 
 Regardless of the implementation, a module's build command is executed
 with its working directory set to a copy of the module's top-level directory, located at
@@ -109,7 +109,7 @@ with its working directory set to a copy of the module's top-level directory, lo
 The `.garden` directory should not be modified by users, since this may lead to unexpected errors when the Garden CLI
 tools are used in the project.
 
-The `build.dependencies` subdirective lists the module's build dependencies, which need to be built ahead of this module.
+The `build.dependencies` subfield lists the module's build dependencies, which need to be built ahead of this module.
 `name` is the required module's name. In many cases you only need to declare the build dependency name. For example,
 you simply need to build one container before another because it's used as a base image.
 
@@ -118,7 +118,7 @@ The `copy` key indicates what files/folders, if any, should be copied from the r
 module in question after the required module is built (`source`), and where they should be copied to (`target`).
 
 In the above example, we copy the entire contents of `hello-npm-package`'s build directory, after it has been built,
-into the `libraries/hello-npm-package/` in the `hello-container` build directory, _before the container is built_.
+into `libraries/hello-npm-package/` in the `hello-container` build directory, _before `hello-container` is built_.
 
 ## Services
 
@@ -152,7 +152,7 @@ module:
   ...
 ```
 
-Here the `services` directive defines the services exposed by the module. We only have one service in this example,
+Here the `services` field defines the services exposed by the module. We only have one service in this example,
 but you may add another service, for example a background worker, that is started using a different
 `command`.
 
@@ -198,4 +198,4 @@ We highly recommend browsing through the [Example projects](../examples/README.m
 
 Also be sure to look at the [Config Files Reference](../reference/config-files-reference.md)
  for more details on each of the available
-configuration keys.
+configuration fields.
