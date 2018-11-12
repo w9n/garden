@@ -13,7 +13,7 @@ import { ServiceLogEntry } from "../../src/types/plugin/outputs"
 import { LogEntry } from "../../src/logger/log-entry"
 import {
   describeModuleTypeParamsSchema,
-  validateModuleParamsSchema,
+  configureModuleParamsSchema,
   getBuildStatusParamsSchema,
   buildModuleParamsSchema,
   pushModuleParamsSchema,
@@ -390,7 +390,7 @@ const testPlugin: PluginFactory = async () => ({
       },
 
       validate: async (params) => {
-        validate(params, validateModuleParamsSchema)
+        validate(params, configureModuleParamsSchema)
 
         const serviceConfigs = params.moduleConfig.spec.services.map(spec => ({
           name: spec.name,

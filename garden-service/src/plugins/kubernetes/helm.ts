@@ -27,12 +27,12 @@ import {
   BuildModuleParams,
   DeployServiceParams,
   GetServiceStatusParams,
-  ValidateModuleParams,
+  ConfigureModuleParams,
   DeleteServiceParams,
 } from "../../types/plugin/params"
 import {
   BuildResult,
-  ValidateModuleResult,
+  ConfigureModuleResult,
 } from "../../types/plugin/outputs"
 import { Service, ServiceStatus } from "../../types/service"
 import { dumpYaml } from "../../util/util"
@@ -111,7 +111,7 @@ const helmStatusCodeMap: { [code: number]: ServiceState } = {
 }
 
 export const helmHandlers: Partial<ModuleAndRuntimeActions<HelmModule>> = {
-  async validate({ moduleConfig }: ValidateModuleParams): Promise<ValidateModuleResult> {
+  async configure({ moduleConfig }: ConfigureModuleParams): Promise<ConfigureModuleResult> {
     moduleConfig.spec = validate(
       moduleConfig.spec,
       helmModuleSpecSchema,

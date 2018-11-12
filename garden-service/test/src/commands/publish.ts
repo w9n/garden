@@ -4,7 +4,7 @@ import { join } from "path"
 import { expect } from "chai"
 import * as td from "testdouble"
 import { Garden } from "../../../src/garden"
-import { validateContainerModule } from "../../../src/plugins/container"
+import { configureContainerModule } from "../../../src/plugins/container"
 import { PluginFactory } from "../../../src/types/plugin/plugin"
 import { PublishCommand } from "../../../src/commands/publish"
 import { makeTestGardenA } from "../../helpers"
@@ -30,7 +30,7 @@ const testProvider: PluginFactory = () => {
   return {
     moduleActions: {
       container: {
-        validate: validateContainerModule,
+        validate: configureContainerModule,
         getBuildStatus,
         build,
         publishModule,

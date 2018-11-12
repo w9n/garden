@@ -2,7 +2,7 @@ import { join } from "path"
 import { Garden } from "../../../src/garden"
 import { DeployCommand } from "../../../src/commands/deploy"
 import { expect } from "chai"
-import { validateContainerModule } from "../../../src/plugins/container"
+import { configureContainerModule } from "../../../src/plugins/container"
 import { buildGenericModule } from "../../../src/plugins/generic"
 import {
   PluginFactory,
@@ -74,7 +74,7 @@ const testProvider: PluginFactory = () => {
   return {
     moduleActions: {
       container: {
-        validate: validateContainerModule,
+        validate: configureContainerModule,
         build: buildGenericModule,
         deployService,
         getServiceStatus,

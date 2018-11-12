@@ -2,7 +2,7 @@ import { join } from "path"
 import { Garden } from "../../../src/garden"
 import { CallCommand } from "../../../src/commands/call"
 import { expect } from "chai"
-import { validateContainerModule } from "../../../src/plugins/container"
+import { configureContainerModule } from "../../../src/plugins/container"
 import { PluginFactory } from "../../../src/types/plugin/plugin"
 import { GetServiceStatusParams } from "../../../src/types/plugin/params"
 import { ServiceStatus } from "../../../src/types/service"
@@ -39,7 +39,7 @@ const testProvider: PluginFactory = () => {
 
   return {
     moduleActions: {
-      container: { validate: validateContainerModule, getServiceStatus },
+      container: { validate: configureContainerModule, getServiceStatus },
     },
   }
 }

@@ -11,12 +11,12 @@ import {
   validate,
 } from "../../config/common"
 import { Module } from "../../types/module"
-import { ValidateModuleResult } from "../../types/plugin/outputs"
+import { ConfigureModuleResult } from "../../types/plugin/outputs"
 import {
   DeployServiceParams,
   GetServiceOutputsParams,
   GetServiceStatusParams,
-  ValidateModuleParams,
+  ConfigureModuleParams,
 } from "../../types/plugin/params"
 import { ServiceState, ServiceStatus, ingressHostnameSchema } from "../../types/service"
 import {
@@ -75,9 +75,9 @@ const gcfModuleSpecSchema = Joi.object()
 
 export interface GcfModule extends Module<GcfModuleSpec, GcfServiceSpec, GenericTestSpec> { }
 
-export async function parseGcfModule(
-  { moduleConfig }: ValidateModuleParams<GcfModule>,
-): Promise<ValidateModuleResult<GcfModule>> {
+export async function configureGcfModule(
+  { moduleConfig }: ConfigureModuleParams<GcfModule>,
+): Promise<ConfigureModuleResult<GcfModule>> {
   // TODO: check that each function exists at the specified path
   moduleConfig.spec = validate(
     moduleConfig.spec, gcfModuleSpecSchema, { context: `module ${moduleConfig.name}` },
@@ -107,7 +107,7 @@ export const gardenPlugin = (): GardenPlugin => ({
   },
   moduleActions: {
     "google-cloud-function": {
-      validate: parseGcfModule,
+      configure: configureGcfModule,
 
       async deployService(
         { ctx, module, service, runtimeContext, log, buildDependencies }: DeployServiceParams<GcfModule>,

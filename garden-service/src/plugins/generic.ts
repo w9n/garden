@@ -21,14 +21,17 @@ import { Module } from "../types/module"
 import {
   BuildResult,
   BuildStatus,
-  ValidateModuleResult,
-  TestResult, TaskStatus, RunTaskResult,
+  TaskStatus,
+  RunTaskResult,
+  ConfigureModuleResult,
+  TestResult,
 } from "../types/plugin/outputs"
 import {
   BuildModuleParams,
   GetBuildStatusParams,
-  ValidateModuleParams,
-  TestModuleParams, RunTaskParams,
+  TestModuleParams,
+  RunTaskParams,
+  ConfigureModuleParams,
 } from "../types/plugin/params"
 import { BaseServiceSpec } from "../config/service"
 import { BaseTestSpec, baseTestSpecSchema } from "../config/test"
@@ -80,9 +83,9 @@ export const genericModuleSpecSchema = Joi.object()
 
 export interface GenericModule extends Module<GenericModuleSpec, BaseServiceSpec, GenericTestSpec> { }
 
-export async function parseGenericModule(
-  { moduleConfig }: ValidateModuleParams<GenericModule>,
-): Promise<ValidateModuleResult> {
+export async function configureGenericModule(
+  { moduleConfig }: ConfigureModuleParams<GenericModule>,
+): Promise<ConfigureModuleResult> {
   moduleConfig.spec = validate(moduleConfig.spec, genericModuleSpecSchema, { context: `module ${moduleConfig.name}` })
 
   moduleConfig.testConfigs = moduleConfig.spec.tests.map(t => ({
@@ -211,7 +214,7 @@ export async function getGenericTaskStatus(): Promise<TaskStatus> {
 export const genericPlugin: GardenPlugin = {
   moduleActions: {
     generic: {
-      validate: parseGenericModule,
+      configure: configureGenericModule,
       getBuildStatus: getGenericModuleBuildStatus,
       build: buildGenericModule,
       runTask: runGenericTask,

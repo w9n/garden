@@ -147,7 +147,10 @@ export type ValidateModuleResult<T extends Module = Module> =
   T["taskConfigs"][0]["spec"]
   >
 
-export const validateModuleResultSchema = moduleConfigSchema
+export type ConfigureModuleResult<T extends Module = Module> =
+  ModuleConfig<T["spec"], T["serviceConfigs"][0]["spec"], T["testConfigs"][0]["spec"]>
+
+export const configureModuleResultSchema = moduleConfigSchema
 
 export interface BuildResult {
   buildLog?: string
@@ -331,7 +334,7 @@ export interface TaskActionOutputs {
 
 export interface ModuleActionOutputs extends ServiceActionOutputs {
   describeType: Promise<ModuleTypeDescription>
-  validate: Promise<ValidateModuleResult>
+  configure: Promise<ConfigureModuleResult>
   getBuildStatus: Promise<BuildStatus>
   build: Promise<BuildResult>
   hotReload: Promise<HotReloadResult>

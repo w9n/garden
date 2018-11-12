@@ -26,7 +26,7 @@ import { mapValues, fromPairs } from "lodash"
 import {
   DeleteSecretParams,
   GetSecretParams,
-  ValidateModuleParams,
+  ConfigureModuleParams,
   RunModuleParams,
   RunServiceParams,
   RunTaskParams,
@@ -110,7 +110,7 @@ export const testPlugin: PluginFactory = (): GardenPlugin => {
       test: {
         testModule: testGenericModule,
 
-        async validate({ moduleConfig }: ValidateModuleParams) {
+        async validate({ moduleConfig }: ConfigureModuleParams) {
           moduleConfig.spec = validate(
             moduleConfig.spec,
             containerModuleSpecSchema,

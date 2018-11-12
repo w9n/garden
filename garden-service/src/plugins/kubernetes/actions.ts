@@ -24,7 +24,7 @@ import {
   RunTaskParams,
 } from "../../types/plugin/params"
 import { ModuleVersion } from "../../vcs/base"
-import { ContainerModule, helpers, validateContainerModule } from "../container"
+import { ContainerModule, helpers, configureContainerModule } from "../container"
 import { deserializeValues, serializeValues } from "../../util/util"
 import { KubeApi } from "./api"
 import { getAppNamespace, getMetadataNamespace } from "./namespace"
@@ -40,11 +40,11 @@ import { KubernetesProvider } from "./kubernetes"
 import { getIngresses } from "./ingress"
 import { rsyncPortName } from "./service"
 import { ServiceStatus } from "../../types/service"
-import { ValidateModuleParams } from "../../types/plugin/params"
 import { waitForServices } from "./status"
+import { ConfigureModuleParams } from "../../types/plugin/params"
 
-export async function validate(params: ValidateModuleParams<ContainerModule>) {
-  const config = await validateContainerModule(params)
+export async function validate(params: ConfigureModuleParams<ContainerModule>) {
+  const config = await configureContainerModule(params)
 
   // validate ingress specs
   const provider: KubernetesProvider = params.ctx.provider

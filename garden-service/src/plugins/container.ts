@@ -31,7 +31,7 @@ import {
 import {
   BuildModuleParams,
   GetBuildStatusParams,
-  ValidateModuleParams,
+  ConfigureModuleParams,
   HotReloadParams,
   PublishModuleParams,
 } from "../types/plugin/params"
@@ -467,7 +467,7 @@ export const helpers = {
 
 }
 
-export async function validateContainerModule({ moduleConfig }: ValidateModuleParams<ContainerModule>) {
+export async function configureContainerModule({ moduleConfig }: ConfigureModuleParams<ContainerModule>) {
   moduleConfig.spec = validate(moduleConfig.spec, containerModuleSpecSchema, { context: `module ${moduleConfig.name}` })
 
   // validate services
@@ -584,7 +584,7 @@ export async function validateContainerModule({ moduleConfig }: ValidateModulePa
 export const gardenPlugin = (): GardenPlugin => ({
   moduleActions: {
     container: {
-      validate: validateContainerModule,
+      configure: configureContainerModule,
 
       async getBuildStatus({ module, log }: GetBuildStatusParams<ContainerModule>) {
         const identifier = await helpers.imageExistsLocally(module)

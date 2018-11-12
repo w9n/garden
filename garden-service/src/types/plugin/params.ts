@@ -76,12 +76,12 @@ export interface DescribeModuleTypeParams { }
 export const describeModuleTypeParamsSchema = Joi.object()
   .keys({})
 
-export interface ValidateModuleParams<T extends Module = Module> {
+export interface ConfigureModuleParams<T extends Module = Module> {
   ctx: PluginContext
   log?: LogEntry
   moduleConfig: T["_ConfigType"]
 }
-export const validateModuleParamsSchema = Joi.object()
+export const configureModuleParamsSchema = Joi.object()
   .keys({
     ctx: pluginContextSchema
       .required(),
@@ -319,7 +319,7 @@ export interface TaskActionParams<T extends Module = Module> {
 
 export interface ModuleActionParams<T extends Module = Module> {
   describeType: DescribeModuleTypeParams,
-  validate: ValidateModuleParams<T>
+  configure: ConfigureModuleParams<T>
   getBuildStatus: GetBuildStatusParams<T>
   build: BuildModuleParams<T>
   pushModule: PushModuleParams<T>
