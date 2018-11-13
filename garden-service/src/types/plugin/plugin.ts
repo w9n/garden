@@ -18,16 +18,15 @@ import { Module } from "../module"
 import { serviceStatusSchema } from "../service"
 import { serviceOutputsSchema } from "../../config/service"
 import { LogNode } from "../../logger/log-node"
-import { Provider } from "../../config/project"
-import { dashboardPagesSchema, DashboardPage } from "../../config/dashboard"
+import { DashboardPage } from "../../config/dashboard"
 import {
   ModuleActionParams,
   PluginActionParams,
   ServiceActionParams,
   TaskActionParams,
+  getEnvironmentStatusParamsSchema,
   prepareEnvironmentParamsSchema,
   cleanupEnvironmentParamsSchema,
-  getEnvironmentStatusParamsSchema,
   getSecretParamsSchema,
   setSecretParamsSchema,
   deleteSecretParamsSchema,
@@ -50,6 +49,7 @@ import {
   publishModuleParamsSchema,
   getTaskStatusParamsSchema,
   runTaskParamsSchema,
+  configureProviderParamsSchema,
 } from "./params"
 import {
   buildModuleResultSchema,
@@ -76,6 +76,7 @@ import {
   publishModuleResultSchema,
   taskStatusSchema,
   runTaskResultSchema,
+  configureProviderResultSchema,
 } from "./outputs"
 
 export type PluginActions = {
@@ -109,6 +110,18 @@ export interface PluginActionDescription {
 }
 
 export const pluginActionDescriptions: { [P in PluginActionName]: PluginActionDescription } = {
+  configureProvider: {
+    description: dedent`
+      Validate and transform the given provider configuration.
+
+      Note that this does not need to perform structural schema validation (the framework does that
+      automatically), but should in turn perform semantic validation to make sure the configuration is sane.
+
+      This can also be used to further specify the semantics of the provider, including dependencies.
+    `,
+    paramsSchema: configureProviderParamsSchema,
+    resultSchema: configureProviderResultSchema,
+  },
   getEnvironmentStatus: {
     description: dedent`
       Check if the current environment is ready for use by this plugin. Use this action in combination
@@ -409,7 +422,6 @@ export const pluginActionNames: PluginActionName[] = <PluginActionName[]>Object.
 export const moduleActionNames: ModuleActionName[] = <ModuleActionName[]>Object.keys(moduleActionDescriptions)
 
 export interface GardenPlugin {
-  config?: object
   configKeys?: string[]
 
   modules?: string[]
@@ -421,14 +433,13 @@ export interface GardenPlugin {
   moduleActions?: { [moduleType: string]: Partial<ModuleAndRuntimeActions> }
 }
 
-export interface PluginFactoryParams<T extends Provider = any> {
-  config: T["config"],
+export interface PluginFactoryParams {
   log: LogNode,
   projectName: string,
 }
 
-export interface PluginFactory<T extends Provider = any> {
-  (params: PluginFactoryParams<T>): GardenPlugin | Promise<GardenPlugin>
+export interface PluginFactory {
+  (params: PluginFactoryParams): GardenPlugin | Promise<GardenPlugin>
 }
 export type RegisterPluginParam = string | PluginFactory
 export interface Plugins {
@@ -437,13 +448,6 @@ export interface Plugins {
 
 export const pluginSchema = Joi.object()
   .keys({
-    config: Joi.object()
-      .meta({ extendable: true })
-      .description(
-        "Plugins may use this key to override or augment their configuration " +
-        "(as specified in the garden.yml provider configuration.",
-      ),
-    dashboardPages: dashboardPagesSchema,
     modules: joiArray(Joi.string())
       .description(
         "Plugins may optionally provide paths to Garden modules that are loaded as part of the plugin. " +

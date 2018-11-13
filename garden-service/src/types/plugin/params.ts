@@ -19,6 +19,7 @@ import { EnvironmentStatus, ServiceLogEntry, environmentStatusSchema } from "./o
 import { moduleConfigSchema } from "../../config/module"
 import { testConfigSchema } from "../../config/test"
 import { taskSchema } from "../../config/task"
+import { ProviderConfig, providerConfigBaseSchema } from "../../config/project"
 
 export interface PluginActionContextParams {
   ctx: PluginContext
@@ -72,16 +73,10 @@ const taskActionParamsSchema = moduleActionParamsSchema
 /**
  * Plugin actions
  */
-export interface DescribeModuleTypeParams { }
-export const describeModuleTypeParamsSchema = Joi.object()
-  .keys({})
-
-export interface ConfigureModuleParams<T extends Module = Module> {
-  ctx: PluginContext
-  log?: LogEntry
-  moduleConfig: T["_ConfigType"]
+export interface ConfigureProviderParams extends PluginActionParamsBase {
+  config: ProviderConfig
 }
-export const configureModuleParamsSchema = Joi.object()
+export const configureProviderParamsSchema = Joi.object()
   .keys({
     ctx: pluginContextSchema
       .required(),
@@ -133,6 +128,8 @@ export interface DeleteSecretParams extends PluginActionParamsBase {
 export const deleteSecretParamsSchema = getSecretParamsSchema
 
 export interface PluginActionParams {
+  configureProvider: ConfigureProviderParams
+
   getEnvironmentStatus: GetEnvironmentStatusParams
   prepareEnvironment: PrepareEnvironmentParams
   cleanupEnvironment: CleanupEnvironmentParams
@@ -145,6 +142,24 @@ export interface PluginActionParams {
 /**
  * Module actions
  */
+export interface DescribeModuleTypeParams { }
+export const describeModuleTypeParamsSchema = Joi.object()
+  .keys({})
+
+export interface ConfigureModuleParams<T extends Module = Module> {
+  ctx: PluginContext
+  logEntry?: LogEntry
+  moduleConfig: T["_ConfigType"]
+}
+export const configureModuleParamsSchema = Joi.object()
+  .keys({
+    ctx: pluginContextSchema
+      .required(),
+    logEntry: logEntrySchema,
+    moduleConfig: moduleConfigSchema
+      .required(),
+  })
+
 export interface GetBuildStatusParams<T extends Module = Module> extends PluginModuleActionParamsBase<T> { }
 export const getBuildStatusParamsSchema = moduleActionParamsSchema
 

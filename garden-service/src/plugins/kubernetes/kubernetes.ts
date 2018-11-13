@@ -157,11 +157,12 @@ const configSchema = kubernetesConfigBase
   })
 
 export function gardenPlugin({ config }: { config: KubernetesConfig }): GardenPlugin {
-  config = validate(config, configSchema, { context: "kubernetes provider config" })
-
   return {
-    config,
     actions: {
+      configureProvider: async () => {
+        config = validate(config, configSchema, { context: "kubernetes provider configuration" })
+        return { config }
+      },
       getEnvironmentStatus: getRemoteEnvironmentStatus,
       prepareEnvironment: prepareRemoteEnvironment,
       cleanupEnvironment,

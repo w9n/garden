@@ -12,6 +12,15 @@ import { PrimitiveMap } from "../../config/common"
 import { Module } from "../module"
 import { ServiceStatus } from "../service"
 import { moduleConfigSchema, ModuleConfig } from "../../config/module"
+import { ProviderConfig, providerConfigBaseSchema } from "../../config/project"
+
+export interface ConfigureProviderResult {
+  config: ProviderConfig
+}
+export const configureProviderResultSchema = Joi.object()
+  .keys({
+    config: providerConfigBaseSchema,
+  })
 
 export interface EnvironmentStatus {
   ready: boolean
@@ -308,6 +317,8 @@ export const taskStatusSchema = Joi.object()
   })
 
 export interface PluginActionOutputs {
+  configureProvider: Promise<ConfigureProviderResult>
+
   getEnvironmentStatus: Promise<EnvironmentStatus>
   prepareEnvironment: Promise<PrepareEnvironmentResult>
   cleanupEnvironment: Promise<CleanupEnvironmentResult>

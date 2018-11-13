@@ -416,7 +416,6 @@ export class Garden {
     try {
       plugin = await factory({
         projectName: this.projectName,
-        config,
         log: this.log,
       })
     } catch (error) {
@@ -833,7 +832,7 @@ export class Garden {
     @param force - add the module again, even if it's already registered
    */
   async addModule(config: ModuleConfig, force = false) {
-    const validateHandler = await this.getModuleActionHandler({ actionType: "validate", moduleType: config.type })
+    const validateHandler = await this.getModuleActionHandler({ actionType: "configure", moduleType: config.type })
     const ctx = this.getPluginContext(validateHandler["pluginName"])
 
     config = await validateHandler({ ctx, moduleConfig: config })
