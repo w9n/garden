@@ -11,16 +11,15 @@ import { safeLoad } from "js-yaml"
 import * as Joi from "joi"
 import { join } from "path"
 import { GardenPlugin } from "../../types/plugin/plugin"
-import { validate } from "../../config/common"
 import {
   gardenPlugin as k8sPlugin,
   KubernetesBaseConfig,
   kubernetesConfigBase,
-  KubernetesConfig,
 } from "./kubernetes"
 import { readFile } from "fs-extra"
 import { homedir } from "os"
 import { getLocalEnvironmentStatus, prepareLocalEnvironment } from "./init"
+import { ConfigureProviderParams } from "../../types/plugin/params"
 
 // TODO: split this into separate plugins to handle Docker for Mac and Minikube
 
@@ -69,83 +68,88 @@ const configSchema = kubernetesConfigBase
 
 export const name = "local-kubernetes"
 
-export async function gardenPlugin({ projectName, config, log }): Promise<GardenPlugin> {
-  config = validate(config, configSchema, { context: "local-kubernetes provider config" })
+export function gardenPlugin({ projectName, logEntry }): GardenPlugin {
+  const plugin = k8sPlugin()
 
-  let context = config.context
-  let defaultHostname = config.defaultHostname
-  let systemServices
+  plugin.configSchema = configSchema
 
-  if (!context) {
-    // automatically detect supported kubectl context if not explicitly configured
-    const kubeConfig = await getKubeConfig()
-    const currentContext = kubeConfig["current-context"]
+  plugin.actions!.configureProvider = async ({ config }: ConfigureProviderParams<LocalKubernetesConfig>) => {
+    let context = config.context
+    let defaultHostname = config.defaultHostname
+    let systemServices
 
-    if (currentContext && supportedContexts.includes(currentContext)) {
-      // prefer current context if set and supported
-      context = currentContext
-      log.debug({ section: name, msg: `Using current context: ${context}` })
-    } else if (kubeConfig.contexts) {
-      const availableContexts = kubeConfig.contexts.map(c => c.name)
+    if (!context) {
+      // automatically detect supported kubectl context if not explicitly configured
+      const kubeConfig = await getKubeConfig()
+      const currentContext = kubeConfig["current-context"]
 
-      for (const supportedContext of supportedContexts) {
-        if (availableContexts.includes(supportedContext)) {
-          context = supportedContext
-          log.debug({ section: name, msg: `Using detected context: ${context}` })
-          break
+      if (currentContext && supportedContexts.includes(currentContext)) {
+        // prefer current context if set and supported
+        context = currentContext
+        log.debug({ section: name, msg: `Using current context: ${context}` })
+      } else if (kubeConfig.contexts) {
+        const availableContexts = kubeConfig.contexts.map(c => c.name)
+
+        for (const supportedContext of supportedContexts) {
+          if (availableContexts.includes(supportedContext)) {
+            context = supportedContext
+            log.debug({ section: name, msg: `Using detected context: ${context}` })
+            break
+          }
         }
       }
     }
-  }
 
-  if (!context) {
-    context = supportedContexts[0]
-    log.debug({ section: name, msg: `No kubectl context auto-detected, using default: ${context}` })
-  }
-
-  if (context === "minikube") {
-    await execa("minikube", ["config", "set", "WantUpdateNotification", "false"])
-
-    if (!defaultHostname) {
-      // use the nip.io service to give a hostname to the instance, if none is explicitly configured
-      const minikubeIp = await execa.stdout("minikube", ["ip"])
-      defaultHostname = `${projectName}.${minikubeIp}.nip.io`
+    if (!context) {
+      context = supportedContexts[0]
+      logEntry.debug({ section: name, msg: `No kubectl context auto-detected, using default: ${context}` })
     }
 
-    await Promise.all([
-      // TODO: wait for ingress addon to be ready, if it was previously disabled
-      execa("minikube", ["addons", "enable", "ingress"]),
-      setMinikubeDockerEnv(),
-    ])
+    if (context === "minikube") {
+      await execa("minikube", ["config", "set", "WantUpdateNotification", "false"])
 
-    systemServices = []
-  } else {
-    if (!defaultHostname) {
-      defaultHostname = `${projectName}.local.app.garden`
+      if (!defaultHostname) {
+        // use the nip.io service to give a hostname to the instance, if none is explicitly configured
+        const minikubeIp = await execa.stdout("minikube", ["ip"])
+        defaultHostname = `${projectName}.${minikubeIp}.nip.io`
+      }
+
+      await Promise.all([
+        // TODO: wait for ingress addon to be ready, if it was previously disabled
+        execa("minikube", ["addons", "enable", "ingress"]),
+        setMinikubeDockerEnv(),
+      ])
+
+      systemServices = []
+    } else {
+      if (!defaultHostname) {
+        defaultHostname = `${projectName}.local.app.garden`
+      }
     }
-  }
 
-  const k8sConfig: KubernetesConfig = {
-    name: config.name,
-    context,
-    defaultHostname,
-    defaultUsername: "default",
-    deploymentRegistry: {
-      hostname: "foo.garden",   // this is not used by this plugin, but required by the base plugin
-      namespace: "_",
-    },
-    forceSsl: false,
-    imagePullSecrets: config.imagePullSecrets,
-    ingressHttpPort: 80,
-    ingressHttpsPort: 443,
-    ingressClass: "nginx",
-    tlsCertificates: config.tlsCertificates,
-    // TODO: support SSL on local deployments
-    _system: config._system,
-    _systemServices: systemServices,
-  }
+    config = {
+      name: config.name,
+      context,
+      defaultHostname,
+      defaultUsername: "default",
+      deploymentRegistry: {
+        hostname: "foo.garden",   // this is not used by this plugin, but required by the base plugin
+        namespace: "_",
+      },
+      forceSsl: false,
+      imagePullSecrets: config.imagePullSecrets,
+      ingressHttpPort: 80,
+      ingressHttpsPort: 443,
+      ingressClass: "nginx",
+      namespace: config.namespace,
+      tlsCertificates: config.tlsCertificates,
+      // TODO: support SSL on local deployments
+      _system: config._system,
+      _systemServices: systemServices,
+    }
 
-  const plugin = k8sPlugin({ config: k8sConfig })
+    return { name: config.name, config }
+  }
 
   // override the environment configuration steps
   plugin.actions!.getEnvironmentStatus = getLocalEnvironmentStatus

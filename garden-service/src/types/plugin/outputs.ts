@@ -12,11 +12,9 @@ import { PrimitiveMap } from "../../config/common"
 import { Module } from "../module"
 import { ServiceStatus } from "../service"
 import { moduleConfigSchema, ModuleConfig } from "../../config/module"
-import { ProviderConfig, providerConfigBaseSchema } from "../../config/project"
+import { providerConfigBaseSchema, Provider, ProviderConfig } from "../../config/project"
 
-export interface ConfigureProviderResult {
-  config: ProviderConfig
-}
+export interface ConfigureProviderResult<T extends ProviderConfig = ProviderConfig> extends Provider<T> { }
 export const configureProviderResultSchema = Joi.object()
   .keys({
     config: providerConfigBaseSchema,

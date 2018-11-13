@@ -27,6 +27,7 @@ import {
   pickBy,
   sortBy,
   difference,
+  findIndex,
 } from "lodash"
 const AsyncLock = require("async-lock")
 
@@ -43,7 +44,7 @@ import {
   pluginModuleSchema,
   pluginSchema,
 } from "./types/plugin/plugin"
-import { Environment, SourceConfig, defaultProvider, Provider } from "./config/project"
+import { Environment, SourceConfig, defaultProvider, ProviderConfig } from "./config/project"
 import {
   findByName,
   getIgnorer,
@@ -401,7 +402,7 @@ export class Garden {
     this.registeredPlugins[name] = factory
   }
 
-  private async loadPlugin(pluginName: string, config: object) {
+  private async loadPlugin(pluginName: string, config: ProviderConfig) {
     const factory = this.registeredPlugins[pluginName]
 
     if (!factory) {
@@ -411,7 +412,7 @@ export class Garden {
       })
     }
 
-    let plugin
+    let plugin: GardenPlugin
 
     try {
       plugin = await factory({
@@ -428,19 +429,6 @@ export class Garden {
     plugin = validate(plugin, pluginSchema, { context: `plugin "${pluginName}"` })
 
     this.loadedPlugins[pluginName] = plugin
-
-    // allow plugins to extend their own config (that gets passed to action handlers)
-    const providerConfig = findByName(this.environment.providers, pluginName)
-    if (providerConfig) {
-      extend(providerConfig, plugin.config, config)
-    } else {
-      const provider: Provider = {
-        name: pluginName,
-        dashboardPages: plugin.dashboardPages,
-        config: extend({ name: pluginName }, plugin.config, config),
-      }
-      this.environment.providers.push(provider)
-    }
 
     for (const modulePath of plugin.modules || []) {
       let moduleConfig = await this.resolveModule(modulePath)
@@ -468,6 +456,30 @@ export class Garden {
         const handler = moduleActions[moduleType][actionType]
         handler && this.addModuleActionHandler(pluginName, actionType, moduleType, handler)
       }
+    }
+
+    // allow plugins to be configured more than once
+    // (to support extending config for fixed plugins and environment defaults)
+    let providerIndex = findIndex(this.environment.providers, ["name", pluginName])
+    let providerConfig = providerIndex === -1 ? { name: pluginName } : this.environment.providers[providerIndex]
+
+    extend(providerConfig, config)
+
+    // call configureProvider action if provided
+    const configureHandler = actions.configureProvider
+    if (configureHandler) {
+      const configureOutput = await configureHandler({ config: providerConfig })
+      providerConfig = configureOutput.config
+    }
+
+    if (plugin.configSchema) {
+      providerConfig = validate(providerConfig, plugin.configSchema, { context: `${pluginName} configuration` })
+    }
+
+    if (providerIndex === -1) {
+      this.environment.providers.push(providerConfig)
+    } else {
+      this.environment.providers[providerIndex] = providerConfig
     }
   }
 

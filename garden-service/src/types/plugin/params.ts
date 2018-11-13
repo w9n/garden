@@ -73,8 +73,8 @@ const taskActionParamsSchema = moduleActionParamsSchema
 /**
  * Plugin actions
  */
-export interface ConfigureProviderParams extends PluginActionParamsBase {
-  config: ProviderConfig
+export interface ConfigureProviderParams<T extends ProviderConfig = any> {
+  config: T
 }
 export const configureProviderParamsSchema = Joi.object()
   .keys({

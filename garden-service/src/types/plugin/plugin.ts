@@ -118,6 +118,9 @@ export const pluginActionDescriptions: { [P in PluginActionName]: PluginActionDe
       automatically), but should in turn perform semantic validation to make sure the configuration is sane.
 
       This can also be used to further specify the semantics of the provider, including dependencies.
+
+      This action is called on every execution of Garden, so it should return quickly and avoid doing
+      any network calls.
     `,
     paramsSchema: configureProviderParamsSchema,
     resultSchema: configureProviderResultSchema,
@@ -294,6 +297,9 @@ export const moduleActionDescriptions:
       should not specify the built-in fields (such as \`name\`, \`type\` and \`description\`).
 
       Used when auto-generating framework documentation.
+
+      This action is called on every execution of Garden, so it should return quickly and avoid doing
+      any network calls.
     `,
     paramsSchema: describeModuleTypeParamsSchema,
     resultSchema: moduleTypeDescriptionSchema,
@@ -309,6 +315,9 @@ export const moduleActionDescriptions:
       configuration and test configuration. Since services and tests are not specified using built-in
       framework configuration fields, this action needs to specify those via the \`serviceConfigs\` and
       \`testConfigs\` output keys.
+
+      This action is called on every execution of Garden, so it should return quickly and avoid doing
+      any network calls.
     `,
     paramsSchema: configureModuleParamsSchema,
     resultSchema: configureModuleResultSchema,
@@ -422,6 +431,7 @@ export const pluginActionNames: PluginActionName[] = <PluginActionName[]>Object.
 export const moduleActionNames: ModuleActionName[] = <ModuleActionName[]>Object.keys(moduleActionDescriptions)
 
 export interface GardenPlugin {
+  configSchema?: Joi.Schema,
   configKeys?: string[]
 
   modules?: string[]
@@ -448,6 +458,8 @@ export interface Plugins {
 
 export const pluginSchema = Joi.object()
   .keys({
+    // TODO: make this an OpenAPI schema for portability
+    configSchema: Joi.object({ isJoi: Joi.boolean().only(true).required() }).unknown(true),
     modules: joiArray(Joi.string())
       .description(
         "Plugins may optionally provide paths to Garden modules that are loaded as part of the plugin. " +
