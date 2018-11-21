@@ -15,9 +15,11 @@ import {
   joiVariables,
   PrimitiveMap,
   joiRepositoryUrl,
+  joiIdentifierMap,
 } from "./common"
 import { TestConfig, TestSpec } from "./test"
 import { TaskConfig, TaskSpec } from "./task"
+import { joiPrimitive } from "./common"
 
 export interface BuildCopySpec {
   source: string
@@ -36,6 +38,8 @@ const copySchema = Joi.object()
         "POSIX-style path or filename to copy the directory or file(s) to (defaults to same as source path).",
       ),
   })
+
+export const moduleOutputsSchema = joiIdentifierMap(joiPrimitive())
 
 export interface BuildDependencyConfig {
   name: string
@@ -65,6 +69,7 @@ export interface BaseModuleSpec {
   build: BuildConfig
   description?: string
   name: string
+  outputs: PrimitiveMap
   path: string
   type: string
   variables: PrimitiveMap
@@ -82,6 +87,7 @@ export const baseModuleSpecSchema = Joi.object()
       .description("The name of this module.")
       .example("my-sweet-module"),
     description: Joi.string(),
+    outputs: moduleOutputsSchema,
     repositoryUrl: joiRepositoryUrl()
       .description(
         dedent`${joiRepositoryUrl().describe().description}

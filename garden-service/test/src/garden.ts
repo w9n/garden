@@ -558,26 +558,6 @@ describe("Garden", () => {
     })
   })
 
-  describe("resolveModuleDependencies", () => {
-    it("should resolve build dependencies", async () => {
-      const garden = await makeTestGardenA()
-      const modules = await garden.resolveDependencyModules([{ name: "module-c", copy: [] }], [])
-      expect(getNames(modules)).to.eql(["module-a", "module-b", "module-c"])
-    })
-
-    it("should resolve service dependencies", async () => {
-      const garden = await makeTestGardenA()
-      const modules = await garden.resolveDependencyModules([], ["service-b"])
-      expect(getNames(modules)).to.eql(["module-a", "module-b"])
-    })
-
-    it("should combine module and service dependencies", async () => {
-      const garden = await makeTestGardenA()
-      const modules = await garden.resolveDependencyModules([{ name: "module-b", copy: [] }], ["service-c"])
-      expect(getNames(modules)).to.eql(["module-a", "module-b", "module-c"])
-    })
-  })
-
   describe("resolveVersion", () => {
     beforeEach(() => td.reset())
 

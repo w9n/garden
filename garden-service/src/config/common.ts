@@ -28,6 +28,8 @@ export const enumToArray = Enum => (
 export const joiPrimitive = () => Joi.alternatives().try(Joi.number(), Joi.string(), Joi.boolean())
   .description("Number, string or boolean")
 
+export const joiPrimitiveMap = () => joiIdentifierMap(joiPrimitive())
+
 export const absolutePathRegex = /^\/.*/ // Note: Only checks for the leading slash
 export const identifierRegex = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/
 export const userIdentifierRegex = /^(?!garden)[a-z][a-z0-9]*(-[a-z0-9]+)*$/

@@ -108,6 +108,7 @@ type OpenFaasProvider = Provider<OpenFaasConfig>
 export function gardenPlugin(): GardenPlugin {
   return {
     configSchema,
+    dependencies: ["kubernetes"],
     modules: [join(STATIC_DIR, "openfaas", "templates")],
     actions: {
       async getEnvironmentStatus({ ctx, log }: GetEnvironmentStatusParams) {
@@ -126,8 +127,6 @@ export function gardenPlugin(): GardenPlugin {
         // TODO: refactor to dedupe similar code in local-kubernetes
         const ofGarden = await getOpenFaasGarden(ctx)
 
-        await ofGarden.actions.prepareEnvironment({ force, log })
-
         const results = await ofGarden.actions.deployServices({ log, force })
         const failed = values(results.taskResults).filter(r => !!r.error).length
 
@@ -142,7 +141,7 @@ export function gardenPlugin(): GardenPlugin {
 
       async cleanupEnvironment({ ctx, log }: CleanupEnvironmentParams) {
         const ofGarden = await getOpenFaasGarden(ctx)
-        await ofGarden.actions.cleanupEnvironment({ log })
+        await ofGarden.actions.cleanupEnvironment({ log, pluginName: "kubernetes" })
         return {}
       },
     },
@@ -206,7 +205,9 @@ export function gardenPlugin(): GardenPlugin {
 
         async getServiceOutputs({ ctx, service }: GetServiceOutputsParams<OpenFaasModule>) {
           return {
-            endpoint: await getInternalServiceUrl(ctx, service),
+            outputs: {
+              endpoint: await getInternalServiceUrl(ctx, service),
+            },
           }
         },
 
@@ -246,7 +247,7 @@ export function gardenPlugin(): GardenPlugin {
         },
 
         async deleteService(params: DeleteServiceParams<OpenFaasModule>): Promise<ServiceStatus> {
-          const { ctx, log, service, runtimeContext, buildDependencies } = params
+          const { ctx, log, service, runtimeContext } = params
           let status
           let found = true
 
@@ -256,7 +257,6 @@ export function gardenPlugin(): GardenPlugin {
               log,
               service,
               runtimeContext,
-              buildDependencies,
               module: service.module,
             })
 

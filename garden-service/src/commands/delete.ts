@@ -95,10 +95,23 @@ export class DeleteEnvironmentCommand extends Command {
   `
 
   async action({ garden, log }: CommandParams): Promise<CommandResult<EnvironmentStatusMap>> {
-    const { name } = garden.environment
-    logHeader({ log, emoji: "skull_and_crossbones", command: `Deleting ${name} environment` })
+    logHeader({ emoji: "skull_and_crossbones", command: `Deleting ${garden.environmentName} environment` })
 
-    const result = await garden.actions.cleanupEnvironment({ log })
+    const providers = await garden.getProviders()
+
+    const result = {}
+
+    await Bluebird.map(providers, async (provider) => {
+      const entry = garden.log.info({
+        status: "active",
+        section: provider.name,
+        msg: "Cleaning up environment...",
+      })
+      result[provider.name] = await garden.actions.cleanupEnvironment({ log, pluginName: provider.name })
+      entry.setSuccess("Done!")
+    })
+
+    garden.log.finish()
 
     return { result }
   }

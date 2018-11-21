@@ -16,9 +16,9 @@ import {
 } from "../../config/common"
 import { Module } from "../module"
 import { serviceStatusSchema } from "../service"
-import { serviceOutputsSchema } from "../../config/service"
 import { LogNode } from "../../logger/log-node"
 import { DashboardPage } from "../../config/dashboard"
+import { providerDependenciesSchema } from "../../config/project"
 import {
   ModuleActionParams,
   PluginActionParams,
@@ -49,6 +49,7 @@ import {
   publishModuleParamsSchema,
   getTaskStatusParamsSchema,
   runTaskParamsSchema,
+  getEnvironmentOutputsParamsSchema,
   configureProviderParamsSchema,
 } from "./params"
 import {
@@ -76,6 +77,8 @@ import {
   publishModuleResultSchema,
   taskStatusSchema,
   runTaskResultSchema,
+  getEnvironmentOutputsResultSchema,
+  getServiceOutputsResultSchema,
   configureProviderResultSchema,
 } from "./outputs"
 
@@ -130,6 +133,9 @@ export const pluginActionDescriptions: { [P in PluginActionName]: PluginActionDe
       Check if the current environment is ready for use by this plugin. Use this action in combination
       with \`prepareEnvironment\`.
 
+      Because this runs on almost every invocation of \`garden\`, this should be implemented in a way that
+      returns quite quickly.
+
       Called before \`prepareEnvironment\`. If this returns \`ready: true\`, the
       \`prepareEnvironment\` action is not called.
 
@@ -169,6 +175,19 @@ export const pluginActionDescriptions: { [P in PluginActionName]: PluginActionDe
     `,
     paramsSchema: cleanupEnvironmentParamsSchema,
     resultSchema: cleanupEnvironmentResultSchema,
+  },
+
+  getEnvironmentOutputs: {
+    description: dedent`
+      Return any outputs that this provider can expose to other providers or modules, via template strings.
+
+      Because this runs on almost every invocation of \`garden\`, this should be implemented in a way that
+      returns quite quickly.
+
+      The outputs will be available via the \`\${providers.<provider-name>.outputs}\` key in configuration files.
+    `,
+    paramsSchema: getEnvironmentOutputsParamsSchema,
+    resultSchema: getEnvironmentOutputsResultSchema,
   },
 
   getSecret: {
@@ -227,9 +246,16 @@ export const serviceActionDescriptions: { [P in ServiceActionName]: PluginAction
     resultSchema: serviceStatusSchema,
   },
   getServiceOutputs: {
-    description: "DEPRECATED",
+    description: dedent`
+      Return a map of runtime information about the service, that can be reference in configuration files.
+
+      Because this runs when parsing configuration files, this should be implemented in a way that
+      returns quickly, ideally without network interaction.
+
+      The outputs will be available via the \`\${services.<service-name>.outputs}\` key in configuration files.
+    `,
     paramsSchema: getServiceOutputsParamsSchema,
-    resultSchema: serviceOutputsSchema,
+    resultSchema: getServiceOutputsResultSchema,
   },
   execInService: {
     description: dedent`
@@ -349,7 +375,7 @@ export const moduleActionDescriptions:
       available to the deployment environment when deploying.
 
       Note the distinction to \`publishModule\` which may, depending on the module type, work similarly but
-      is only called when explicitly calling the \`garden publish\`.
+      is only called when explicitly calling the \`garden publish\` command.
 
       This is usually not necessary for plugins that run locally.
 
@@ -433,7 +459,7 @@ export const moduleActionNames: ModuleActionName[] = <ModuleActionName[]>Object.
 export interface GardenPlugin {
   configSchema?: Joi.Schema,
   configKeys?: string[]
-
+  dependencies?: string[]
   modules?: string[]
 
   // TODO: move this to the configureProvider output, once that's implemented
@@ -460,12 +486,14 @@ export const pluginSchema = Joi.object()
   .keys({
     // TODO: make this an OpenAPI schema for portability
     configSchema: Joi.object({ isJoi: Joi.boolean().only(true).required() }).unknown(true),
+    dependencies: providerDependenciesSchema,
     modules: joiArray(Joi.string())
       .description(
         "Plugins may optionally provide paths to Garden modules that are loaded as part of the plugin. " +
         "This is useful, for example, to provide build dependencies for other modules " +
         "or as part of the plugin operation.",
-      ),
+      )
+      .example(["./path/to/my-module"]),
     // TODO: document plugin actions further
     actions: Joi.object().keys(mapValues(pluginActionDescriptions, () => Joi.func()))
       .description("A map of plugin action handlers provided by the plugin."),

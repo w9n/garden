@@ -8,6 +8,7 @@
 
 import * as Joi from "joi"
 import { safeDump } from "js-yaml"
+import { ProjectConfigContext } from "./config-context"
 import {
   joiArray,
   joiIdentifier,
@@ -15,25 +16,39 @@ import {
   Primitive,
   joiRepositoryUrl,
 } from "./common"
-import { DashboardPage } from "../config/dashboard"
+import { resolveTemplateString, resolveTemplateStrings } from "../template-string"
+import { findByName, getNames } from "../util/util"
+import { ParameterError, ConfigurationError } from "../exceptions"
+import { fixedPlugins } from "../plugins/plugins"
+import { merge, keyBy, omit } from "lodash"
+import * as Bluebird from "bluebird"
 
 export interface ProviderConfig {
   name: string
+  dependencies: string[]
   [key: string]: any
 }
+
+export const providerDependenciesSchema = joiArray(Joi.string())
+  .description(
+    "List of names of providers that this provider depends on. Those providers will be loaded before this one, " +
+    "and their configuration made available to this provider via template strings and the plugin action context.",
+  )
+  .example(["kubernetes"])
 
 export const providerConfigBaseSchema = Joi.object()
   .keys({
     name: joiIdentifier().required()
       .description("The name of the provider plugin to use.")
       .example("local-kubernetes"),
+    dependencies: providerDependenciesSchema,
   })
   .unknown(true)
   .meta({ extendable: true })
 
 export interface Provider<T extends ProviderConfig = any> {
   name: string
-  dashboardPages: DashboardPage[]
+  dependencies: string[]
   config: T
 }
 
@@ -105,6 +120,7 @@ export const defaultEnvironments: EnvironmentConfig[] = [
     providers: [
       {
         name: "local-kubernetes",
+        dependencies: [],
       },
     ],
     variables: {},
@@ -148,6 +164,75 @@ export const projectSchema = Joi.object()
 // this is used for default handlers in the action handler
 export const defaultProvider: Provider = {
   name: "_default",
-  dashboardPages: [],
+  dependencies: [],
   config: {},
+}
+
+/**
+ * Resolve the template strings in the provided project config, excluding the provider configurations.
+ */
+export async function resolveProjectConfig(projectConfig: ProjectConfig, environmentName?: string) {
+  const context = new ProjectConfigContext()
+
+  // Resolve all template strings except the provider configurations.
+  projectConfig = {
+    ...await resolveTemplateStrings(omit(projectConfig, ["environmentDefaults", "environments"]), context),
+    environmentDefaults: await resolveEnvironmentConfig(projectConfig.environmentDefaults, context),
+    environments: await Bluebird.map(projectConfig.environments, (env) => resolveEnvironmentConfig(env, context)),
+  }
+
+  const projectName = projectConfig.name
+
+  // First figure out which environment we're running and validate it.
+  if (!environmentName) {
+    environmentName = projectConfig.defaultEnvironment
+  }
+
+  const environmentConfig = findByName(projectConfig.environments, environmentName)
+
+  if (!environmentConfig) {
+    throw new ParameterError(`Project ${projectName} does not specify environment ${environmentName}`, {
+      projectName,
+      environmentName,
+      definedEnvironments: getNames(projectConfig.environments),
+    })
+  }
+
+  // Then resolve the provider configs.
+  if (!environmentConfig.providers || environmentConfig.providers.length === 0) {
+    throw new ConfigurationError(`Environment '${environmentName}' does not specify any providers`, {
+      projectName,
+      environmentName,
+      environmentConfig,
+    })
+  }
+
+  // Load built-in providers.
+  const fixedProviders = fixedPlugins.map(name => ({ name, dependencies: [] }))
+
+  // Merge environment defaults with the selected environment's configuration.
+  const providers: ProviderConfig[] = Object.values(merge(
+    fixedProviders,
+    keyBy(environmentDefaults.providers, "name"),
+    keyBy(environmentConfig.providers, "name"),
+  ))
+
+  // Resolve the project configuration based on selected environment
+  const variables = merge({}, environmentDefaults.variables, environmentConfig.variables)
+
+  return { projectConfig, environmentConfig, providers, variables }
+}
+
+async function resolveEnvironmentConfig<T extends CommonEnvironmentConfig>(
+  config: T, context: ProjectConfigContext,
+): Promise<T> {
+  return {
+    ...await resolveTemplateStrings(omit(<any>config, ["providers"]), context),
+    // Only resolve built-in fields with the project context for providers.
+    providers: Bluebird.map(config.providers, async (provider) => ({
+      ...provider,
+      name: await resolveTemplateString(provider.name, context),
+      dependencies: await resolveTemplateStrings(provider.dependencies, context),
+    })),
+  }
 }

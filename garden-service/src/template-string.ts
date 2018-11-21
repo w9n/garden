@@ -11,7 +11,8 @@ import { resolve } from "path"
 import Bluebird = require("bluebird")
 import { asyncDeepMap } from "./util/util"
 import { GardenBaseError } from "./exceptions"
-import { ConfigContext } from "./config/config-context"
+import { ConfigContext, ContextResolveParams } from "./config/config-context"
+import { KeyedSet } from "./util/keyed-set"
 
 export type StringOrStringPromise = Promise<string> | string
 
@@ -50,10 +51,10 @@ export async function resolveTemplateString(string: string, context: ConfigConte
   const parsed = parser.parse(string, {
     getKey: async (key: string[]) => context.resolve({ key, nodePath: [], stack }),
     // need this to allow nested template strings
-    resolve: async (parts: StringOrStringPromise[]) => {
-      const s = (await Bluebird.all(parts)).join("")
-      return resolveTemplateString(`\$\{${s}\}`, context, stack)
-    },
+    // resolve: async (parts: StringOrStringPromise[]) => {
+    //   const s = (await Bluebird.all(parts)).join("")
+    //   return resolveTemplateString(`\$\{${s}\}`, context, stack)
+    // },
     TemplateStringError,
   })
 
@@ -71,4 +72,27 @@ export async function resolveTemplateStrings<T extends object>(obj: T, context: 
     // need to iterate sequentially to catch potential circular dependencies
     { concurrency: 1 },
   )
+}
+
+/**
+ * Scans for all template strings in the given object and lists the referenced keys.
+ */
+export async function collectTemplateReferences<T extends object>(obj: T): Promise<string[][]> {
+  const context = new ScanContext()
+  await resolveTemplateStrings(obj, context)
+  return context.foundKeys.entries().sort()
+}
+
+class ScanContext extends ConfigContext {
+  foundKeys: KeyedSet<string[]>
+
+  constructor() {
+    super()
+    this.foundKeys = new KeyedSet<string[]>(v => v.join("."))
+  }
+
+  async resolve({ key }: ContextResolveParams) {
+    this.foundKeys.add(key)
+    return key.join(".")
+  }
 }

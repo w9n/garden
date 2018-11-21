@@ -81,10 +81,11 @@ export class KubeApi {
 
   constructor(public provider: KubernetesProvider) {
     this.context = provider.config.context
-    const config = getSecret(this.context)
+    const config = getConfig(this.context)
 
     for (const [name, cls] of Object.entries(apiTypes)) {
       const api = new cls(config.getCurrentCluster()!.server)
+      api.setDefaultAuthentication(config)
       this[name] = this.proxyApi(api, config)
     }
   }
@@ -207,7 +208,7 @@ export class KubeApi {
   }
 }
 
-function getSecret(context: string): KubeConfig {
+function getConfig(context: string): KubeConfig {
   if (!kubeConfigStr) {
     const kubeConfigPath = process.env.KUBECONFIG || join(homedir(), ".kube", "config")
     kubeConfigStr = readFileSync(kubeConfigPath).toString()

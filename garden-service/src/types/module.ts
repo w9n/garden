@@ -35,6 +35,7 @@ export interface Module<
   version: ModuleVersion
 
   services: Service<Module<M, S, T, W>>[]
+  buildDependencies: Module[]
   serviceNames: string[]
   serviceDependencyNames: string[]
 
@@ -47,6 +48,8 @@ export interface Module<
 
 export const moduleSchema = moduleConfigSchema
   .keys({
+    buildDependencies: joiArray(Joi.lazy(() => moduleSchema))
+      .description("List of all build dependencies of this module."),
     buildPath: Joi.string()
       .required()
       .uri(<any>{ relativeOnly: true })
@@ -81,12 +84,12 @@ export interface ModuleConfigMap<T extends ModuleConfig = ModuleConfig> {
   [key: string]: T
 }
 
-export async function moduleFromConfig(garden: Garden, config: ModuleConfig): Promise<Module> {
+export async function moduleFromConfig(garden: Garden, config: ModuleConfig, version: ModuleVersion): Promise<Module> {
   const module: Module = {
     ...config,
 
     buildPath: await garden.buildDir.buildPath(config.name),
-    version: await garden.resolveVersion(config.name, config.build.dependencies),
+    version,
 
     services: [],
     serviceNames: getNames(config.serviceConfigs),

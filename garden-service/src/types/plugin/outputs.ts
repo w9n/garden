@@ -13,6 +13,7 @@ import { Module } from "../module"
 import { ServiceStatus } from "../service"
 import { moduleConfigSchema, ModuleConfig } from "../../config/module"
 import { providerConfigBaseSchema, Provider, ProviderConfig } from "../../config/project"
+import { serviceOutputsSchema } from "../../config/service"
 
 export interface ConfigureProviderResult<T extends ProviderConfig = ProviderConfig> extends Provider<T> { }
 export const configureProviderResultSchema = Joi.object()
@@ -47,12 +48,17 @@ export type EnvironmentStatusMap = {
 }
 
 export interface PrepareEnvironmentResult { }
-
 export const prepareEnvironmentResultSchema = Joi.object().keys({})
 
 export interface CleanupEnvironmentResult { }
-
 export const cleanupEnvironmentResultSchema = Joi.object().keys({})
+
+export interface GetEnvironmentOutputsResult {
+  outputs: PrimitiveMap
+}
+export const getEnvironmentOutputsResultSchema = Joi.object().keys({
+  outputs: serviceOutputsSchema,
+})
 
 export interface GetSecretResult {
   value: string | null
@@ -80,6 +86,13 @@ export const deleteSecretResultSchema = Joi.object()
       .required()
       .description("Set to true if the key was deleted, false if it was not found."),
   })
+
+export interface GetServiceOutputsResult {
+  outputs: PrimitiveMap
+}
+export const getServiceOutputsResultSchema = Joi.object().keys({
+  outputs: serviceOutputsSchema,
+})
 
 export interface ExecInServiceResult {
   code: number
@@ -320,6 +333,7 @@ export interface PluginActionOutputs {
   getEnvironmentStatus: Promise<EnvironmentStatus>
   prepareEnvironment: Promise<PrepareEnvironmentResult>
   cleanupEnvironment: Promise<CleanupEnvironmentResult>
+  getEnvironmentOutputs: Promise<GetEnvironmentOutputsResult>
 
   getSecret: Promise<GetSecretResult>
   setSecret: Promise<SetSecretResult>
@@ -330,7 +344,7 @@ export interface ServiceActionOutputs {
   getServiceStatus: Promise<ServiceStatus>
   deployService: Promise<ServiceStatus>
   deleteService: Promise<ServiceStatus>
-  getServiceOutputs: Promise<PrimitiveMap>
+  getServiceOutputs: Promise<GetServiceOutputsResult>
   execInService: Promise<ExecInServiceResult>
   getServiceLogs: Promise<{}>
   runService: Promise<RunResult>

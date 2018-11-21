@@ -6,6 +6,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { ResolveConfigTask } from "../tasks/resolve-config"
 import {
   Command,
   CommandParams,
@@ -25,7 +26,12 @@ export class ValidateCommand extends Command {
   async action({ garden, log }: CommandParams): Promise<CommandResult> {
     logHeader({ log, emoji: "heavy_check_mark", command: "validate" })
 
-    await garden.getModules()
+    await garden.taskGraph.process({
+      services: new ResolveConfigTask({
+        garden,
+        force: false,
+      }),
+    })
 
     return {}
   }

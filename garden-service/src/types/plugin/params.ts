@@ -42,13 +42,10 @@ const actionParamsSchema = Joi.object()
 
 export interface PluginModuleActionParamsBase<T extends Module = Module> extends PluginActionParamsBase {
   module: T
-  buildDependencies: { [name: string]: Module }
 }
 const moduleActionParamsSchema = actionParamsSchema
   .keys({
     module: moduleSchema,
-    buildDependencies: joiIdentifierMap(moduleSchema)
-      .description("All build dependencies of this module, keyed by name."),
   })
 
 export interface PluginServiceActionParamsBase<T extends Module = Module> extends PluginModuleActionParamsBase<T> {
@@ -103,6 +100,10 @@ export interface CleanupEnvironmentParams extends PluginActionParamsBase {
 }
 export const cleanupEnvironmentParamsSchema = actionParamsSchema
 
+export interface GetEnvironmentOutputsParams extends PluginActionParamsBase {
+}
+export const getEnvironmentOutputsParamsSchema = actionParamsSchema
+
 export interface GetSecretParams extends PluginActionParamsBase {
   key: string
 }
@@ -133,6 +134,7 @@ export interface PluginActionParams {
   getEnvironmentStatus: GetEnvironmentStatusParams
   prepareEnvironment: PrepareEnvironmentParams
   cleanupEnvironment: CleanupEnvironmentParams
+  getEnvironmentOutputs: GetEnvironmentOutputsParams
 
   getSecret: GetSecretParams
   setSecret: SetSecretParams

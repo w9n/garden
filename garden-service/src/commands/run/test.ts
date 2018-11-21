@@ -87,11 +87,8 @@ export class RunTestCommand extends Command<Args, Opts> {
       command: `Running test ${chalk.cyan(testName)} in module ${chalk.cyan(moduleName)}`,
     })
 
-    await garden.actions.prepareEnvironment({ log })
-
-    const buildTask = new BuildTask({ garden, log, module, force: opts["force-build"] })
-    await garden.addTask(buildTask)
-    await garden.processTasks()
+    const buildTask = new BuildTask({ garden, module, log, force: opts["force-build"] })
+    await garden.taskGraph.process([buildTask])
 
     const interactive = opts.interactive
     const deps = await garden.getServices(testConfig.dependencies)

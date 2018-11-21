@@ -22,12 +22,12 @@ import { defaultProvider } from "./config/project"
 import { dashboardPagesSchema } from "./config/dashboard"
 
 type WrappedFromGarden = Pick<Garden,
-  "projectName" |
-  "projectRoot" |
-  "projectSources" |
+  "environmentName" |
   // TODO: remove this from the interface
   "localConfigStore" |
-  "environment"
+  "projectName" |
+  "projectRoot" |
+  "projectSources"
   >
 
 const providerSchema = Joi.object()
@@ -56,16 +56,17 @@ export const pluginContextSchema = Joi.object()
     projectSources: projectSourcesSchema,
     localConfigStore: Joi.object()
       .description("Helper class for managing local configuration for plugins."),
-    environment: environmentSchema,
+    environmentName: environmentSchema,
     provider: providerSchema
       .description("The provider being used for this context."),
     providers: joiIdentifierMap(providerSchema)
-      .description("Map of all configured providers for the current environment and project."),
+      .description(
+        "Map of other providers that the current provider depends on (useful for referencing their configuration).",
+      ),
   })
 
 export function createPluginContext(garden: Garden, providerName: string): PluginContext {
-  const projectConfig = cloneDeep(garden.environment)
-  const providers = keyBy(projectConfig.providers, "name")
+  const providers = mapValues(garden.providerConfigs, (config, name) => ({ name, config }))
   let provider = providers[providerName]
 
   if (providerName === "_default") {
@@ -80,7 +81,7 @@ export function createPluginContext(garden: Garden, providerName: string): Plugi
     projectName: garden.projectName,
     projectRoot: garden.projectRoot,
     projectSources: cloneDeep(garden.projectSources),
-    environment: projectConfig,
+    environmentName: garden.environmentName,
     localConfigStore: garden.localConfigStore,
     provider,
     providers,

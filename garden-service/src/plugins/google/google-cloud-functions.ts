@@ -110,7 +110,7 @@ export const gardenPlugin = (): GardenPlugin => ({
       configure: configureGcfModule,
 
       async deployService(
-        { ctx, module, service, runtimeContext, log, buildDependencies }: DeployServiceParams<GcfModule>,
+        { ctx, module, service, runtimeContext, log }: DeployServiceParams<GcfModule>,
       ) {
         // TODO: provide env vars somehow to function
         const project = getProject(service, ctx.provider)
@@ -126,7 +126,7 @@ export const gardenPlugin = (): GardenPlugin => ({
           "--trigger-http",
         ])
 
-        return getServiceStatus({ ctx, module, service, runtimeContext, log, buildDependencies })
+        return getServiceStatus({ ctx, module, service, runtimeContext, log })
       },
 
       async getServiceOutputs({ ctx, service }: GetServiceOutputsParams<GcfModule>) {
@@ -134,7 +134,9 @@ export const gardenPlugin = (): GardenPlugin => ({
         const project = getProject(service, ctx.provider)
 
         return {
-          ingress: `https://${GOOGLE_CLOUD_DEFAULT_REGION}-${project}.cloudfunctions.net/${service.name}`,
+          outputs: {
+            ingress: `https://${GOOGLE_CLOUD_DEFAULT_REGION}-${project}.cloudfunctions.net/${service.name}`,
+          },
         }
       },
     },

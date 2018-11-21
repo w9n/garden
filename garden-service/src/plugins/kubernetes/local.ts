@@ -129,6 +129,7 @@ export function gardenPlugin({ projectName, logEntry }): GardenPlugin {
 
     config = {
       name: config.name,
+      dependencies: [],
       context,
       defaultHostname,
       defaultUsername: "default",
@@ -148,7 +149,11 @@ export function gardenPlugin({ projectName, logEntry }): GardenPlugin {
       _systemServices: systemServices,
     }
 
-    return { name: config.name, config }
+    return {
+      name: config.name,
+      dependencies: [],
+      config,
+    }
   }
 
   // override the environment configuration steps

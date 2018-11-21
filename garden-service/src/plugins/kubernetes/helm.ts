@@ -304,12 +304,12 @@ async function getChartObjects(ctx: PluginContext, service: Service, log: LogEnt
 }
 
 async function getServiceStatus(
-  { ctx, service, module, log, buildDependencies }: GetServiceStatusParams<HelmModule>,
+  { ctx, service, module, log }: GetServiceStatusParams<HelmModule>,
 ): Promise<ServiceStatus> {
   // need to build to be able to check the status
-  const buildStatus = await getGenericModuleBuildStatus({ ctx, module, log, buildDependencies })
+  const buildStatus = await getGenericModuleBuildStatus({ ctx, module, log })
   if (!buildStatus.ready) {
-    await build({ ctx, module, log, buildDependencies })
+    await build({ ctx, module, log })
   }
 
   // first check if the installed objects on the cluster match the current code

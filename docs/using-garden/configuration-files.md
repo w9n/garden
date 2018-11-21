@@ -34,7 +34,7 @@ project:
     - name: local
       providers:
         - name: local-kubernetes
-        - name: openfaas
+        - name: local-openfaas
 ```
 
 The project-wide `garden.yml` defines the project's name, the default configuration used for each

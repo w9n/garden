@@ -7,64 +7,44 @@
  */
 
 import chalk from "chalk"
-import { BuildTask } from "./build"
-import { Module } from "../types/module"
 import { PushResult } from "../types/plugin/outputs"
-import { BaseTask } from "../tasks/base"
-import { Garden } from "../garden"
-import { DependencyGraphNodeType } from "../dependency-graph"
-import { LogEntry } from "../logger/log-entry"
+import { ModuleTask, ModuleTaskParams } from "../tasks/base"
 
-export interface PushTaskParams {
-  garden: Garden
-  log: LogEntry
-  module: Module
-  force: boolean
-  fromWatch?: boolean
-  hotReloadServiceNames?: string[]
+interface Params extends ModuleTaskParams {
+  forceBuild: boolean
 }
 
-export class PushTask extends BaseTask {
+export class PushTask extends ModuleTask<Params, PushResult> {
   type = "push"
-  depType: DependencyGraphNodeType = "push"
+  concurrencyLimit = 4
 
-  force: boolean
-  private module: Module
-  private fromWatch: boolean
-  private hotReloadServiceNames: string[]
+  private readonly forceBuild: boolean
 
-  constructor({ garden, log, module, force, fromWatch = false, hotReloadServiceNames = [] }: PushTaskParams) {
-    super({ garden, log, version: module.version })
-    this.module = module
-    this.force = force
-    this.fromWatch = fromWatch
-    this.hotReloadServiceNames = hotReloadServiceNames
-  }
-
-  async getDependencies() {
-    return [new BuildTask({
-      garden: this.garden,
-      log: this.log,
-      module: this.module,
-      force: this.force,
-      fromWatch: this.fromWatch,
-      hotReloadServiceNames: this.hotReloadServiceNames,
-    })]
+  constructor(params: Params) {
+    super(params)
+    this.forceBuild = params.forceBuild
   }
 
   getName() {
-    return this.module.name
+    return this.moduleConfig.name
   }
 
   getDescription() {
-    return `pushing module ${this.module.name}`
+    return `pushing module ${this.moduleConfig.name}`
   }
 
-  async process(): Promise<PushResult> {
+  async process() {
+    // Resolve dependencies.
+    const { module } = await this.resolveTasks({
+      module: this.resolveModuleTask,
+      build: this.getBuildTask(this.forceBuild),
+      providers: await this.getProviderTasks("pushModule"),
+    })
+
     // avoid logging stuff if there is no push handler
     const defaultHandler = async () => ({ pushed: false })
     const handler = await this.garden.getModuleActionHandler({
-      moduleType: this.module.type,
+      moduleType: module.type,
       actionType: "pushModule",
       defaultHandler,
     })
@@ -73,15 +53,15 @@ export class PushTask extends BaseTask {
       return { pushed: false }
     }
 
-    const log = this.log.info({
-      section: this.module.name,
+    const log = this.garden.log.info({
+      section: module.name,
       msg: "Pushing",
       status: "active",
     })
 
     let result: PushResult
     try {
-      result = await this.garden.actions.pushModule({ module: this.module, log })
+      result = await this.garden.actions.pushModule({ module, log })
     } catch (err) {
       log.setError()
       throw err

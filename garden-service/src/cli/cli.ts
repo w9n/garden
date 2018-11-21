@@ -79,6 +79,7 @@ export const MOCK_CONFIG: GardenConfig = {
       providers: [
         {
           name: "local-kubernetes",
+          dependencies: [],
         },
       ],
       variables: {},

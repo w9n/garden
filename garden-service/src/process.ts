@@ -6,7 +6,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import Bluebird = require("bluebird")
 import chalk from "chalk"
 import { padEnd } from "lodash"
 
@@ -66,6 +65,7 @@ export async function processServices(
 export async function processModules(
   { garden, log, logFooter, modules, watch, handler, changeHandler }: ProcessModulesParams,
 ): Promise<ProcessResults> {
+<<<<<<< HEAD
 
   log.debug("Starting processModules")
 
@@ -98,6 +98,21 @@ export async function processModules(
   }
 
   const results = await garden.processTasks()
+=======
+  const tasks: Task[] = []
+
+  for (const module of modules) {
+    const moduleTasks = await handler(module)
+    if (isModuleLinked(module, garden)) {
+      garden.log.info(
+        chalk.gray(`Reading module ${chalk.cyan(module.name)} from linked local path ${chalk.white(module.path)}`),
+      )
+    }
+    tasks.push(...moduleTasks)
+  }
+
+  const results = await garden.taskGraph.process(tasks)
+>>>>>>> feat: terraform WIP
 
   if (!watch) {
     return {
@@ -126,12 +141,16 @@ export async function processModules(
         }
 
         if (changedModule) {
+<<<<<<< HEAD
           log.silly({ msg: `Files changed for module ${changedModule.name}` })
           changedModule = await garden.getModule(changedModule.name)
           await Bluebird.map(changeHandler!(changedModule), (task) => garden.addTask(task))
-        }
+=======
+          garden.log.debug({ msg: `Files changed for module ${changedModule.name}` })
 
-        await garden.processTasks()
+          await garden.taskGraph.process(await changeHandler!(changedModule))
+>>>>>>> feat: terraform WIP
+        }
       })
 
     registerCleanupFunction("clearAutoReloadWatches", () => {
@@ -150,7 +169,7 @@ export async function processModules(
   watcher.close()
 
   return {
-    taskResults: {}, // TODO: Return latest results for each task baseKey processed between restarts?
+    taskResults: {}, // TODO: Return latest results for each task key processed between restarts?
     restartRequired: true,
   }
 

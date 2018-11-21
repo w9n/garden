@@ -104,7 +104,9 @@ export const gardenPlugin = (): GardenPlugin => ({
         const project = getProject(service, ctx.provider)
 
         return {
-          ingress: `https://${GOOGLE_CLOUD_DEFAULT_REGION}-${project}.cloudfunctions.net/${service.name}`,
+          outputs: {
+            ingress: `https://${GOOGLE_CLOUD_DEFAULT_REGION}-${project}.cloudfunctions.net/${service.name}`,
+          },
         }
       },
     },

@@ -99,9 +99,6 @@ export class DeployCommand extends Command<Args, Opts> {
       watch = opts.watch
     }
 
-    // TODO: make this a task
-    await garden.actions.prepareEnvironment({ log })
-
     const results = await processServices({
       garden,
       log,

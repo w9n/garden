@@ -83,7 +83,9 @@ export async function deleteService(params: DeleteServiceParams): Promise<Servic
 
 export async function getServiceOutputs({ service }: GetServiceOutputsParams<ContainerModule>) {
   return {
-    host: service.name,
+    outputs: {
+      host: service.name,
+    },
   }
 }
 
@@ -138,13 +140,13 @@ export async function execInService(params: ExecInServiceParams<ContainerModule>
 }
 
 export async function hotReload(
-  { ctx, log, runtimeContext, module, buildDependencies }: HotReloadParams<ContainerModule>,
+  { ctx, log, runtimeContext, module }: HotReloadParams<ContainerModule>,
 ): Promise<HotReloadResult> {
   const hotReloadConfig = module.spec.hotReload!
 
   const services = module.services
 
-  if (!await waitForServices(ctx, log, runtimeContext, services, buildDependencies)) {
+  if (!await waitForServices(ctx, log, runtimeContext, services)) {
     // Service deployment timed out, skip hot reload
     return {}
   }
@@ -230,7 +232,7 @@ export async function runModule(
 }
 
 export async function runService(
-  { ctx, service, interactive, runtimeContext, timeout, log, buildDependencies }:
+  { ctx, service, interactive, runtimeContext, timeout, log }:
     RunServiceParams<ContainerModule>,
 ) {
   return runModule({
@@ -241,17 +243,15 @@ export async function runService(
     runtimeContext,
     timeout,
     log,
-    buildDependencies,
   })
 }
 
 export async function runTask(
-  { ctx, task, interactive, runtimeContext, log, buildDependencies }:
+  { ctx, task, interactive, runtimeContext, log }:
     RunTaskParams<ContainerModule>,
 ) {
   const result = await runModule({
     ctx,
-    buildDependencies,
     interactive,
     log,
     runtimeContext,
@@ -268,7 +268,7 @@ export async function runTask(
 }
 
 export async function testModule(
-  { ctx, interactive, module, runtimeContext, testConfig, log, buildDependencies }:
+  { ctx, interactive, module, runtimeContext, testConfig, log }:
     TestModuleParams<ContainerModule>,
 ): Promise<TestResult> {
   const testName = testConfig.name
@@ -284,7 +284,6 @@ export async function testModule(
     runtimeContext,
     timeout,
     log,
-    buildDependencies,
   })
 
   const api = new KubeApi(ctx.provider)

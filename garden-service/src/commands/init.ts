@@ -1,3 +1,5 @@
+import { PrepareEnvironmentTask } from "../tasks/prepare-environment"
+import * as Bluebird from "bluebird"
 /*
  * Copyright (C) 2018 Garden Technologies, Inc. <info@garden.io>
  *
@@ -11,6 +13,7 @@ import {
   Command,
   CommandResult,
   CommandParams,
+  handleTaskResults,
 } from "./base"
 import { logHeader } from "../logger/util"
 import dedent = require("dedent")
@@ -41,14 +44,22 @@ export class InitCommand extends Command {
   options = initOpts
 
   async action({ garden, log, opts }: CommandParams<{}, Opts>): Promise<CommandResult<{}>> {
-    const { name } = garden.environment
-    logHeader({ log, emoji: "gear", command: `Initializing ${name} environment` })
+    logHeader({ log, emoji: "gear", command: `Initializing ${garden.environmentName} environment` })
 
-    await garden.actions.prepareEnvironment({ log, force: opts.force, allowUserInput: true })
+    const providers = await garden.getProviders()
 
-    log.info("")
-    logHeader({ log, emoji: "heavy_check_mark", command: `Done!` })
+    const tasks = await Bluebird.map(providers, async (provider) => {
+      return new PrepareEnvironmentTask({
+        garden,
+        log,
+        provider,
+        allowUserInput: true,
+        force: opts.force,
+      })
+    })
 
-    return { result: {} }
+    const taskResults = Object.values(await garden.taskGraph.process(tasks))
+
+    return handleTaskResults(log, "deploy", { taskResults })
   }
 }

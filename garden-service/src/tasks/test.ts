@@ -11,14 +11,14 @@ import chalk from "chalk"
 import { Module } from "../types/module"
 import { TestConfig } from "../config/test"
 import { ModuleVersion } from "../vcs/base"
-import { BuildTask } from "./build"
 import { DeployTask } from "./deploy"
 import { TestResult } from "../types/plugin/outputs"
-import { BaseTask, TaskParams } from "../tasks/base"
 import { prepareRuntimeContext } from "../types/service"
 import { Garden } from "../garden"
+import { ModuleTask, ModuleTaskParams } from "../tasks/base"
+import { ModuleConfig } from "../config/module"
+import { TaskTask } from "./task"
 import { LogEntry } from "../logger/log-entry"
-import { DependencyGraphNodeType } from "../dependency-graph"
 
 class TestError extends Error {
   toString() {
@@ -26,82 +26,76 @@ class TestError extends Error {
   }
 }
 
-export interface TestTaskParams {
-  garden: Garden
-  log: LogEntry
-  module: Module
-  testConfig: TestConfig
-  force: boolean
+export interface TestTaskParams extends ModuleTaskParams {
   forceBuild: boolean
+  testConfig: TestConfig
 }
 
-export class TestTask extends BaseTask {
+export class TestTask extends ModuleTask<TestTaskParams, TestResult> {
   type = "test"
-  depType: DependencyGraphNodeType = "test"
 
-  private module: Module
   private testConfig: TestConfig
   private forceBuild: boolean
 
-  constructor({ garden, log, module, testConfig, force, forceBuild, version }: TestTaskParams & TaskParams) {
-    super({ garden, log, force, version })
-    this.module = module
-    this.testConfig = testConfig
-    this.force = force
-    this.forceBuild = forceBuild
+  constructor(params: TestTaskParams) {
+    super(params)
+    this.testConfig = params.testConfig
+    this.forceBuild = params.forceBuild
   }
 
   static async factory(initArgs: TestTaskParams): Promise<TestTask> {
-    const { garden, module, testConfig } = initArgs
-    const version = await getTestVersion(garden, module, testConfig)
+    const { garden, moduleConfig, testConfig } = initArgs
+    const version = await getTestVersion(garden, moduleConfig, testConfig)
     return new TestTask({ ...initArgs, version })
   }
 
-  async getDependencies() {
-    const testResult = await this.getTestResult()
-
-    if (testResult && testResult.success) {
-      return []
-    }
-
-    const dg = await this.garden.getDependencyGraph()
-    const services = (await dg.getDependencies(this.depType, this.getName(), false)).service
-
-    const deps: BaseTask[] = [new BuildTask({
-      garden: this.garden,
-      log: this.log,
-      module: this.module,
-      force: this.forceBuild,
-    })]
-
-    for (const service of services) {
-      deps.push(new DeployTask({
-        garden: this.garden,
-        log: this.log,
-        service,
-        force: false,
-        forceBuild: this.forceBuild,
-      }))
-    }
-
-    return Bluebird.all(deps)
-  }
-
   getName() {
-    return `${this.module.name}.${this.testConfig.name}`
+    return `${this.moduleConfig.name}.${this.testConfig.name}`
   }
 
   getDescription() {
-    return `running ${this.testConfig.name} tests in module ${this.module.name}`
+    return `running ${this.testConfig.name} tests in module ${this.moduleConfig.name}`
   }
 
-  async process(): Promise<TestResult> {
+  async process() {
+    const dg = await this.getConfigGraph()
+    const deps = dg.getDependencies("test", this.getName(), false)
+
+    await this.processTasks({
+      build: this.getBuildTask(this.forceBuild),
+      deploy: deps.service.map(s => {
+        return new DeployTask({
+          garden: this.garden,
+          log: this.log,
+          moduleConfig: s.module,
+          version: s.module.version,
+          serviceName: s.name,
+          force: false,
+          forceBuild: this.forceBuild,
+        })
+      }),
+      tasks: deps.task.map(t => {
+        return new TaskTask({
+          garden: this.garden,
+          log: this.log,
+          moduleConfig: t.module,
+          version: t.module.version,
+          taskName: t.name,
+          force: false,
+          forceBuild: this.forceBuild,
+        })
+      }),
+      providers: await this.getProviderTasks("getTestResult", "testModule"),
+    })
+
+    const module = dg.getModule(this.moduleConfig.name)
+
     // find out if module has already been tested
-    const testResult = await this.getTestResult()
+    const testResult = await this.getTestResult(module)
 
     if (testResult && testResult.success) {
       const passedEntry = this.log.info({
-        section: this.module.name,
+        section: module.name,
         msg: `${this.testConfig.name} tests`,
       })
       passedEntry.setSuccess({ msg: chalk.green("Already passed"), append: true })
@@ -109,20 +103,19 @@ export class TestTask extends BaseTask {
     }
 
     const log = this.log.info({
-      section: this.module.name,
+      section: module.name,
       msg: `Running ${this.testConfig.name} tests`,
       status: "active",
     })
 
-    const dependencies = await getTestDependencies(this.garden, this.testConfig)
-    const runtimeContext = await prepareRuntimeContext(this.garden, log, this.module, dependencies)
+    const runtimeContext = await prepareRuntimeContext(this.garden, this.log, module, deps.service)
 
     let result: TestResult
     try {
       result = await this.garden.actions.testModule({
         log,
         interactive: false,
-        module: this.module,
+        module,
         runtimeContext,
         silent: true,
         testConfig: this.testConfig,
@@ -141,14 +134,14 @@ export class TestTask extends BaseTask {
     return result
   }
 
-  private async getTestResult() {
+  private async getTestResult(module: Module) {
     if (this.force) {
       return null
     }
 
     return this.garden.actions.getTestResult({
       log: this.log,
-      module: this.module,
+      module,
       testName: this.testConfig.name,
       version: this.version,
     })
@@ -156,29 +149,53 @@ export class TestTask extends BaseTask {
 }
 
 export async function getTestTasks(
-  { garden, log, module, name, force = false, forceBuild = false }:
-    { garden: Garden, log: LogEntry, module: Module, name?: string, force?: boolean, forceBuild?: boolean },
-) {
-  const configs = module.testConfigs.filter(test => !name || test.name === name)
+  { garden, log, moduleConfig, name, force = false, forceBuild = false }:
+    { garden: Garden, log: LogEntry, moduleConfig: ModuleConfig, name?: string, force?: boolean, forceBuild?: boolean },
+): Promise<TestTask[]> {
+  const configs = moduleConfig.testConfigs.filter(config => !name || config.name === name)
 
-  return Bluebird.map(configs, test => TestTask.factory({
+  return Bluebird.map(configs, (config) => TestTask.factory({
     garden,
     log,
+    version,
     force,
     forceBuild,
-    testConfig: test,
-    module,
+    testConfig: config,
+    moduleConfig,
   }))
-}
-
-async function getTestDependencies(garden: Garden, testConfig: TestConfig) {
-  return garden.getServices(testConfig.dependencies)
 }
 
 /**
  * Determine the version of the test run, based on the version of the module and each of its dependencies.
  */
-async function getTestVersion(garden: Garden, module: Module, testConfig: TestConfig): Promise<ModuleVersion> {
-  const moduleDeps = await garden.resolveDependencyModules(module.build.dependencies, testConfig.dependencies)
-  return garden.resolveVersion(module.name, moduleDeps)
+async function getTestVersion(
+  garden: Garden, moduleConfig: ModuleConfig, testConfig: TestConfig,
+): Promise<ModuleVersion> {
+  const moduleDeps = await resolveDependencyModules(moduleConfig.build.dependencies, testConfig.dependencies)
+  return garden.resolveVersion(moduleConfig.name, moduleDeps.map(dep => ({ ...dep, copy: [] })))
+}
+
+/**
+ * Given the provided lists of build and runtime (service/task) dependencies, return a list of all
+ * modules required to satisfy those dependencies.
+ */
+async function resolveDependencyModules(
+  buildDependencies: BuildDependencyConfig[], runtimeDependencies: string[],
+): Promise<Module[]> {
+  const moduleNames = buildDependencies.map(d => getModuleKey(d.name, d.plugin))
+  const dg = await this.getDependencyGraph()
+
+  const serviceNames = runtimeDependencies.filter(d => this.serviceNameIndex[d])
+  const taskNames = runtimeDependencies.filter(d => this.taskNameIndex[d])
+
+  const buildDeps = await dg.getDependenciesForMany("build", moduleNames, true)
+  const serviceDeps = await dg.getDependenciesForMany("service", serviceNames, true)
+  const taskDeps = await dg.getDependenciesForMany("task", taskNames, true)
+
+  const modules = [
+    ...(await this.getModules(moduleNames)),
+    ...(await dg.modulesForRelations(await dg.mergeRelations(buildDeps, serviceDeps, taskDeps))),
+  ]
+
+  return sortBy(uniqByName(modules), "name")
 }

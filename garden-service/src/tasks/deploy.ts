@@ -10,59 +10,49 @@ import * as Bluebird from "bluebird"
 import chalk from "chalk"
 import { includes } from "lodash"
 import { LogEntry } from "../logger/log-entry"
-import { BaseTask } from "./base"
-import {
-  Service,
-  ServiceStatus,
-  prepareRuntimeContext,
-} from "../types/service"
-import { Garden } from "../garden"
-import { PushTask } from "./push"
 import { TaskTask } from "./task"
-import { DependencyGraphNodeType } from "../dependency-graph"
+import { ServiceTask, ServiceTaskParams } from "./base"
+import { ServiceStatus, prepareRuntimeContext } from "../types/service"
+import { PushTask } from "./push"
+import { findByName } from "../util/util"
 
-export interface DeployTaskParams {
-  garden: Garden
-  service: Service
-  force: boolean
+interface DeployTaskParams extends ServiceTaskParams {
   forceBuild: boolean
   fromWatch?: boolean
   log: LogEntry
-  hotReloadServiceNames?: string[]
 }
 
-export class DeployTask extends BaseTask {
+export class DeployTask extends ServiceTask<DeployTaskParams, ServiceStatus> {
   type = "deploy"
-  depType: DependencyGraphNodeType = "service"
+  concurrencyLimit = 10
 
-  private service: Service
   private forceBuild: boolean
-  private fromWatch: boolean
-  private hotReloadServiceNames: string[]
 
-  constructor(
-    { garden, log, service, force, forceBuild, fromWatch = false, hotReloadServiceNames = [] }: DeployTaskParams,
-  ) {
-    super({ garden, log, force, version: service.module.version })
-    this.service = service
-    this.forceBuild = forceBuild
-    this.fromWatch = fromWatch
-    this.hotReloadServiceNames = hotReloadServiceNames
+  constructor(params: DeployTaskParams) {
+    super(params)
+    this.forceBuild = params.forceBuild
   }
 
-  async getDependencies() {
-
+  async computeDependencies() {
     const dg = await this.garden.getDependencyGraph()
 
+    // TODO!
     // We filter out service dependencies on services configured for hot reloading (if any)
-    const deps = await dg.getDependencies(this.depType, this.getName(), false,
-      (depNode) => !(depNode.type === this.depType && includes(this.hotReloadServiceNames, depNode.name)))
+    const graphDeps = await dg.getDependencies("service", this.getName(), false,
+      (depNode) => !(depNode.type === "service" && includes(this.hotReloadServiceNames, depNode.name)))
 
-    const deployTasks = await Bluebird.map(deps.service, async (service) => {
+    const servicesToDeploy = this.serviceConfig.dependencies
+      .filter(s => !includes(this.hotReloadServiceNames, s))
+
+    const deps = await Bluebird.map(servicesToDeploy, async (serviceName) => {
+      const version = await this.garden.resolveModuleVersion(this.moduleConfig)
+
       return new DeployTask({
         garden: this.garden,
         log: this.log,
-        service,
+        moduleConfig: this.moduleConfig,
+        version,
+        serviceConfig: this.serviceConfig,
         force: false,
         forceBuild: this.forceBuild,
         fromWatch: this.fromWatch,
@@ -70,10 +60,8 @@ export class DeployTask extends BaseTask {
       })
     })
 
-    if (this.fromWatch && includes(this.hotReloadServiceNames, this.service.name)) {
-      return deployTasks
-    } else {
-      const taskTasks = deps.task.map(task => {
+    if (!this.fromWatch || !includes(this.hotReloadServiceNames, this.service.name)) {
+      deps.push(...graphDeps.task.map(task => {
         return new TaskTask({
           task,
           garden: this.garden,
@@ -81,41 +69,44 @@ export class DeployTask extends BaseTask {
           force: false,
           forceBuild: this.forceBuild,
         })
-      })
+      }))
 
-      const pushTask = new PushTask({
+      deps.push(new PushTask({
         garden: this.garden,
         log: this.log,
-        module: this.service.module,
-        force: this.forceBuild,
-        fromWatch: this.fromWatch,
-        hotReloadServiceNames: this.hotReloadServiceNames,
-      })
-
-      return [...deployTasks, ...taskTasks, pushTask]
+        force: this.force,
+        moduleConfig: this.moduleConfig,
+        version: this.version,
+        forceBuild: this.forceBuild,
+      }))
     }
-  }
 
-  protected getName() {
-    return this.service.name
+    deps.push(...await this.getProviderTasks("getServiceStatus", "deployService"))
+
+    return deps
   }
 
   getDescription() {
-    return `deploying service ${this.service.name} (from module ${this.service.module.name})`
+    return `deploying service ${this.serviceConfig.name} (from module ${this.moduleConfig.name})`
   }
 
-  async process(): Promise<ServiceStatus> {
+  async process(dependencyResults: TaskResults) {
     const log = this.log.info({
-      section: this.service.name,
-      msg: "Checking status...",
+      section: this.serviceConfig.name,
+      msg: "Checking status",
       status: "active",
     })
 
+    const module = await this.getModule(dependencyResults)
+    const service = findByName(module.services, this.serviceConfig.name)!
+
     // TODO: get version from build task results
     const { versionString } = this.version
-    const hotReloadEnabled = includes(this.hotReloadServiceNames, this.service.name)
+
+    const hotReloadEnabled = includes(this.hotReloadServiceNames, this.serviceConfig.name)
+
     const status = await this.garden.actions.getServiceStatus({
-      service: this.service,
+      service,
       verifyHotReloadStatus: hotReloadEnabled ? "enabled" : "disabled",
       log,
     })
@@ -135,13 +126,13 @@ export class DeployTask extends BaseTask {
 
     log.setState(`Deploying version ${versionString}...`)
 
-    const dependencies = await this.garden.getServices(this.service.config.dependencies)
+    const dependencies = await this.getResolvedServices(dependencyResults, service.config.dependencies)
 
     let result: ServiceStatus
     try {
       result = await this.garden.actions.deployService({
-        service: this.service,
-        runtimeContext: await prepareRuntimeContext(this.garden, log, this.service.module, dependencies),
+        service,
+        runtimeContext: await prepareRuntimeContext(this.garden, log, module, dependencies),
         log,
         force: this.force,
         hotReload: hotReloadEnabled,

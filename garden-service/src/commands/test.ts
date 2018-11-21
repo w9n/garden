@@ -90,8 +90,6 @@ export class TestCommand extends Command<Args, Opts> {
       modules = await garden.getModules()
     }
 
-    await garden.actions.prepareEnvironment({ log })
-
     const name = opts.name
     const force = opts.force
     const forceBuild = opts["force-build"]

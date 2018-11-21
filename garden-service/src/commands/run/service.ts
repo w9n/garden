@@ -64,11 +64,8 @@ export class RunServiceCommand extends Command<Args, Opts> {
       command: `Running service ${chalk.cyan(serviceName)} in module ${chalk.cyan(module.name)}`,
     })
 
-    await garden.actions.prepareEnvironment({ log })
-
     const buildTask = new BuildTask({ garden, log, module, force: opts["force-build"] })
-    await garden.addTask(buildTask)
-    await garden.processTasks()
+    await garden.taskGraph.process([buildTask])
 
     const dependencies = await garden.getServices(module.serviceDependencyNames)
     const runtimeContext = await prepareRuntimeContext(garden, log, module, dependencies)

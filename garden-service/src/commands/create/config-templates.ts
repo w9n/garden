@@ -74,7 +74,7 @@ export function npmPackageTemplate(_moduleName: string): any {
 }
 
 export const projectTemplate = (name: string, moduleTypes: ModuleType[]): ProjectTemplate => {
-  const providers = uniq(moduleTypes).map(type => ({ name: MODULE_PROVIDER_MAP[type] }))
+  const providers = uniq(moduleTypes).map(type => ({ name: MODULE_PROVIDER_MAP[type], dependencies: [] }))
   return {
     project: {
       name,

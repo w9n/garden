@@ -25,6 +25,7 @@ import { printRuntimeContext } from "./run"
 import dedent = require("dedent")
 import { prepareRuntimeContext } from "../../types/service"
 import { logHeader } from "../../logger/util"
+import { ResolveModuleTask } from "../../tasks/resolve-module"
 
 const runArgs = {
   module: new StringParameter({
@@ -74,7 +75,8 @@ export class RunModuleCommand extends Command<Args, Opts> {
 
   async action({ garden, log, args, opts }: CommandParams<Args, Opts>): Promise<CommandResult<RunResult>> {
     const moduleName = args.module
-    const module = await garden.getModule(moduleName)
+    const moduleConfig = await garden.getModuleConfig(moduleName)
+    const version = await garden.resolveModuleVersion(moduleConfig)
 
     const msg = args.command
       ? `Running command ${chalk.white(args.command.join(" "))} in module ${chalk.white(moduleName)}`
@@ -86,17 +88,19 @@ export class RunModuleCommand extends Command<Args, Opts> {
       command: msg,
     })
 
-    await garden.actions.prepareEnvironment({ log })
+    const { module } = await garden.taskGraph.resolve({
+      module: new ResolveModuleTask({ garden, log, version, moduleConfig, force: false }),
+    })
 
-    const buildTask = new BuildTask({ garden, log, module, force: opts["force-build"] })
-    await garden.addTask(buildTask)
-    await garden.processTasks()
+    await garden.taskGraph.process({
+      build: new BuildTask({ garden, log, module, force: opts["force-build"] }),
+    })
 
     const command = args.command || []
 
     // combine all dependencies for all services in the module, to be sure we have all the context we need
     const depNames = uniq(flatten(module.serviceConfigs.map(s => s.dependencies)))
-    const deps = await garden.getServices(depNames)
+    const deps = await garden.getServiceConfigs(depNames)
 
     const runtimeContext = await prepareRuntimeContext(garden, log, module, deps)
 

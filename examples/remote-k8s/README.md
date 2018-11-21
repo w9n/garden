@@ -35,7 +35,7 @@ Let's Encrypt's [certbot](https://certbot.eff.org) and using the `certonly` opti
 Create a Kubernetes Secret with your generated certificate and key (replace the filenames appropriately).
 
 ```sh
-kubectl create secret tls garden-example --key my.key --cert my.crt
+kubectl create secret tls garden-example-tls --key my.key --cert my.crt
 ```
 
 ### Step 4 - Configure a remote container registry
@@ -47,8 +47,9 @@ registries.
 You'll also need to login to the `docker` CLI, so that images can be pushed to the registry. Please refer
 to your registry's documentation on how to do that (for Docker Hub you simply run `docker login`).
 
-_Note that if you're using GKE along with GCR, and your deployment registry is in the same project as the GKE cluster,
-you can remove the `imagePullSecrets` section from the `garden.yml` and skip creating the auth secret._
+_Note that if you're using GKE along with GCR, and your deployment registry is in the same region and on the same
+account as the GKE cluster, you can remove the `imagePullSecrets` section from the `garden.yml` and skip creating
+the auth secret._
 
 When storing the registry authorization via `kubectl create secret docker-registry`, use the name
 `garden-example-registry-auth` for the secret, and place it in the `default` namespace (or update the `garden.yml`

@@ -9,7 +9,7 @@
 import * as Joi from "joi"
 import { getEnvVarName } from "../util/util"
 import { PrimitiveMap, joiIdentifier, joiEnvVars, joiIdentifierMap, joiPrimitive } from "../config/common"
-import { Module, getModuleKey } from "./module"
+import { Module } from "./module"
 import { serviceOutputsSchema, ServiceConfig, serviceConfigSchema } from "../config/service"
 import { validate } from "../config/common"
 import dedent = require("dedent")
@@ -18,6 +18,7 @@ import { moduleVersionSchema } from "../vcs/base"
 import { Garden } from "../garden"
 import { LogEntry } from "../logger/log-entry"
 import normalizeUrl = require("normalize-url")
+import { ResolveServiceTask } from "../tasks/resolve-service"
 
 export interface Service<M extends Module = Module> {
   name: string
@@ -180,26 +181,17 @@ export const runtimeContextSchema = Joi.object()
 export async function prepareRuntimeContext(
   garden: Garden, log: LogEntry, module: Module, serviceDependencies: Service[],
 ): Promise<RuntimeContext> {
-  const buildDepKeys = module.build.dependencies.map(dep => getModuleKey(dep.name, dep.plugin))
-  const buildDependencies: Module[] = await garden.getModules(buildDepKeys)
   const { versionString } = module.version
   const envVars = {
     GARDEN_VERSION: versionString,
   }
 
-  for (const [key, value] of Object.entries(garden.environment.variables)) {
+  for (const [key, value] of Object.entries(garden.variables)) {
     const envVarName = `GARDEN_VARIABLES_${key.replace(/-/g, "_").toUpperCase()}`
     envVars[envVarName] = value
   }
 
   const deps = {}
-
-  for (const m of buildDependencies) {
-    deps[m.name] = {
-      version: m.version.versionString,
-      outputs: {},
-    }
-  }
 
   for (const dep of serviceDependencies) {
     if (!deps[dep.name]) {
@@ -242,4 +234,23 @@ export function getIngressUrl(ingress: ServiceIngress) {
     port: ingress.port,
     pathname: ingress.path,
   }))
+}
+
+/**
+ * Helper to fully resolve a single Service object.
+ */
+export async function resolveService(garden: Garden, serviceName: string) {
+  const serviceConfig = await garden.getServiceConfig(serviceName)
+  const moduleConfig = await garden.getModuleConfigByService(serviceName)
+  const version = await garden.resolveModuleVersion(moduleConfig)
+  const taskResults = await garden.taskGraph.process({
+    service: new ResolveServiceTask({
+      garden,
+      moduleConfig,
+      serviceConfig,
+      version,
+      force: false,
+    }),
+  })
+  return taskResults.service.output!
 }

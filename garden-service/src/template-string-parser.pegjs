@@ -12,20 +12,21 @@ TemplateString
   / InvalidFormatString
   / $(.*) { return [text()] }
 
-NestedTemplateString
-  = a:(FormatString)+ b:NestedTemplateString? { return [...a, ...(b || [])] }
-  / a:Prefix b:(FormatString)+ c:NestedTemplateString? { return [a, ...b, ...(c || [])] }
-  / InvalidFormatString
-  / Suffix { return [text()] }
+// NOTE: Disabling nested template string support for now. It doesn't appear useful, and complicates things. - JE
+// NestedTemplateString
+//  = a:(FormatString)+ b:NestedTemplateString? { return [...a, ...(b || [])] }
+//  / a:Prefix b:(FormatString)+ c:NestedTemplateString? { return [a, ...b, ...(c || [])] }
+//  / InvalidFormatString
+//  / Suffix { return [text()] }
 
 FormatString
   = FormatStart head:Identifier tail:(KeySeparator Identifier)* FormatEnd {
       const parts = [["", head]].concat(tail).map(p => p[1])
       return options.getKey(parts)
   }
-  / FormatStart s:NestedTemplateString FormatEnd {
-      return options.resolve(s)
-  }
+  // / FormatStart s:NestedTemplateString FormatEnd {
+  //    return options.resolve(s)
+  // }
 
 InvalidFormatString
   = Prefix? FormatStart .* {

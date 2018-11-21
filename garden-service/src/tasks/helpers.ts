@@ -14,6 +14,7 @@ import { Module } from "../types/module"
 import { Service } from "../types/service"
 import { DependencyGraphNode } from "../dependency-graph"
 import { LogEntry } from "../logger/log-entry"
+import { ConfigGraph } from "../config/config-graph"
 
 export async function getDependantTasksForModule(
   { garden, log, module, hotReloadServiceNames, force = false, forceBuild = false,
@@ -67,7 +68,7 @@ export async function getDependantTasksForModule(
   return outputTasks
 }
 
-export async function getHotReloadModuleNames(garden: Garden, hotReloadServiceNames: string[]): Promise<Set<string>> {
-  return new Set(flatten((await garden.getServices(hotReloadServiceNames || []))
+export function getHotReloadModuleNames(config: ConfigGraph, hotReloadServiceNames: string[]): Set<string> {
+  return new Set(flatten((config.getServices(hotReloadServiceNames || []))
     .map(s => s.module.name)))
 }

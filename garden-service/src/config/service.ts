@@ -8,7 +8,8 @@
 
 import deline = require("deline")
 import * as Joi from "joi"
-import { PrimitiveMap, joiIdentifier, joiIdentifierMap, joiPrimitive, joiArray } from "./common"
+import { PrimitiveMap, joiIdentifier, joiArray } from "./common"
+import { moduleOutputsSchema } from "./module"
 
 export interface ServiceSpec { }
 
@@ -18,7 +19,7 @@ export interface BaseServiceSpec extends ServiceSpec {
   outputs: PrimitiveMap
 }
 
-export const serviceOutputsSchema = joiIdentifierMap(joiPrimitive())
+export const serviceOutputsSchema = moduleOutputsSchema
 
 export const baseServiceSchema = Joi.object()
   .keys({

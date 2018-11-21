@@ -8,7 +8,6 @@ import {
 } from "../../src/task-graph"
 import { makeTestGarden, freezeTime } from "../helpers"
 import { Garden } from "../../src/garden"
-import { DependencyGraphNodeType } from "../../src/dependency-graph"
 
 const projectRoot = join(__dirname, "..", "data", "test-project-empty")
 
@@ -23,11 +22,12 @@ interface TestTaskOptions {
 
 class TestTask extends BaseTask {
   type = "test"
-  depType: DependencyGraphNodeType = "test"
   name: string
   callback: TestTaskCallback | null
   id: string
   throwError: boolean
+
+  private dependencies: BaseTask[]
 
   constructor(
     garden: Garden,
@@ -58,10 +58,6 @@ class TestTask extends BaseTask {
   }
 
   getName() {
-    return this.name
-  }
-
-  getBaseKey(): string {
     return this.name
   }
 
@@ -101,7 +97,7 @@ describe("task-graph", () => {
       const task = new TestTask(garden, "a", false)
 
       await graph.addTask(task)
-      const results = await graph.processTasks()
+      const results = await graph.process()
 
       const expected: TaskResults = {
         a: {
@@ -203,7 +199,7 @@ describe("task-graph", () => {
       await graph.addTask(taskA)
       await graph.addTask(taskB)
 
-      const results = await graph.processTasks()
+      const results = await graph.process()
 
       // repeat
 
@@ -326,7 +322,7 @@ describe("task-graph", () => {
       await graph.addTask(taskC)
       await graph.addTask(taskD)
 
-      const results = await graph.processTasks()
+      const results = await graph.process()
 
       const resultA: TaskResult = {
         type: "test",

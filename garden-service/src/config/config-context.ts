@@ -6,11 +6,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { isString, flatten } from "lodash"
+import { isString } from "lodash"
 import { Module } from "../types/module"
-import { PrimitiveMap, isPrimitive, Primitive, joiIdentifierMap, joiStringMap, joiPrimitive } from "./common"
-import { Provider, Environment, providerConfigBaseSchema } from "./project"
-import { ModuleConfig } from "./module"
+import {
+  PrimitiveMap,
+  isPrimitive,
+  Primitive,
+  joiIdentifierMap,
+  joiStringMap,
+  joiPrimitive,
+  joiPrimitiveMap,
+} from "./common"
+import { providerConfigBaseSchema, Provider } from "./project"
 import { ConfigurationError } from "../exceptions"
 import { Service } from "../types/service"
 import { resolveTemplateString } from "../template-string"
@@ -188,57 +195,25 @@ class EnvironmentContext extends ConfigContext {
   }
 }
 
-const exampleVersion = "v17ad4cb3fd"
-
-class ModuleContext extends ConfigContext {
-  @schema(Joi.string().description("The local path of the module.").example("/home/me/code/my-project/my-module"))
-  public path: string
-
-  @schema(Joi.string().description("The current version of the module.").example(exampleVersion))
-  public version: string
-
+class ProviderContext extends ConfigContext {
   @schema(
-    Joi.string()
-      .description("The build path of the module.")
-      .example("/home/me/code/my-project/.garden/build/my-module"),
+    joiPrimitiveMap()
+      .description("The outputs that the provider exposes once initialized.")
+      .example({ "cluster-hostname": "foo.bar.com" }),
   )
-  public buildPath: string
-
-  constructor(root: ConfigContext, module: Module) {
-    super(root)
-    this.path = module.path
-    this.version = module.version.versionString
-    this.buildPath = module.buildPath
-  }
-}
-
-const exampleOutputs = { ingress: "http://my-service/path/to/endpoint" }
-
-class ServiceContext extends ConfigContext {
-  @schema(
-    joiIdentifierMap(joiPrimitive()
-      .description("The outputs defined by the service (see individual plugins for details).")
-      .example(exampleOutputs),
-    ))
   public outputs: PrimitiveMap
 
-  @schema(Joi.string().description("The current version of the service.").example(exampleVersion))
-  public version: string
-
-  // TODO: add ingresses
-
-  constructor(root: ConfigContext, service: Service, outputs: PrimitiveMap) {
+  constructor(root: ConfigContext, outputs: PrimitiveMap) {
     super(root)
     this.outputs = outputs
-    this.version = service.module.version.versionString
   }
 }
 
 /**
- * This context is available for template strings under the `module` key in configuration files.
- * It is a superset of the context available under the `project` key.
+ * This context is available for template strings under the `project.environments[].providers` key in
+ * configuration files. It is a superset of the context available under the `project` key.
  */
-export class ModuleConfigContext extends ProjectConfigContext {
+export class ProviderConfigContext extends ConfigContext {
   @schema(
     EnvironmentContext.getSchema()
       .description("Information about the environment that Garden is running against."),
@@ -246,31 +221,19 @@ export class ModuleConfigContext extends ProjectConfigContext {
   public environment: EnvironmentContext
 
   @schema(
-    joiIdentifierMap(ModuleContext.getSchema())
-      .description("Retrieve information about modules that are defined in the project.")
-      .example({ "my-module": { path: "/home/me/code/my-project/my-module", version: exampleVersion } }),
-  )
-  public modules: Map<string, () => Promise<ModuleContext>>
-
-  @schema(
-    joiIdentifierMap(ServiceContext.getSchema())
-      .description("Retrieve information about services that are defined in the project.")
-      .example({ "my-service": { outputs: exampleOutputs, version: exampleVersion } }),
-  )
-  public services: Map<string, () => Promise<ServiceContext>>
-
-  @schema(
     joiIdentifierMap(providerConfigBaseSchema)
-      .description("A map of all configured plugins/providers for this environment and their configuration.")
-      .example({ kubernetes: { name: "local-kubernetes", context: "my-kube-context" } }),
+      .description("A map of all configured plugins/providers for this environment, their configuration and outputs.")
+      .example({
+        kubernetes: {
+          name: "local-kubernetes",
+          config: {
+            context: "my-kube-context",
+          },
+          outputs: {},
+        },
+      }),
   )
-  public providers: Map<string, Provider>
-
-  // NOTE: This has some negative performance implications and may not be something we want to support,
-  //       so I'm disabling this feature for now.
-  //
-  // @description("Use this to look up values that are configured in the current environment.")
-  // public config: RemoteConfigContext
+  public providers: Map<string, () => Promise<ProviderContext>>
 
   @schema(
     joiIdentifierMap(joiPrimitive())
@@ -282,50 +245,113 @@ export class ModuleConfigContext extends ProjectConfigContext {
   constructor(
     garden: Garden,
     log: LogEntry,
-    environment: Environment,
-    moduleConfigs: ModuleConfig[],
+    providers: Provider[],
   ) {
     super()
 
     const _this = this
 
-    this.environment = new EnvironmentContext(_this, environment.name)
+    this.environment = new EnvironmentContext(this, garden.environmentName)
 
-    this.modules = new Map(moduleConfigs.map((config) =>
-      <[string, () => Promise<ModuleContext>]>[config.name, async () => {
-        const module = await garden.getModule(config.name)
-        return new ModuleContext(_this, module)
+    this.providers = new Map(providers.map((provider) =>
+      <[string, () => Promise<ProviderContext>]>[provider.name, async (p) => {
+        const outputs = await garden.actions.getEnvironmentOutputs({ log, pluginName: p.name })
+        return new ProviderContext(_this, outputs)
       }],
     ))
 
-    const serviceNames = flatten(moduleConfigs.map(m => m.serviceConfigs)).map(s => s.name)
-
-    this.services = new Map(serviceNames.map((name) =>
-      <[string, () => Promise<ServiceContext>]>[name, async () => {
-        const service = await garden.getService(name)
-        const outputs = {
-          ...service.config.outputs,
-          ...await garden.actions.getServiceOutputs({ log, service }),
-        }
-        return new ServiceContext(_this, service, outputs)
-      }],
-    ))
-
-    this.providers = new Map(environment.providers.map(p => <[string, Provider]>[p.name, p]))
-
-    // this.config = new SecretsContextNode(ctx)
-
-    this.variables = environment.variables
+    this.variables = garden.variables
   }
 }
 
-// class RemoteConfigContext extends ConfigContext {
-//   constructor(private ctx: PluginContext) {
-//     super()
-//   }
+const exampleOutputs = { ingress: "http://my-service/path/to/endpoint" }
+const exampleVersion = "v17ad4cb3fd"
 
-//   async resolve({ key }: ResolveParams) {
-//     const { value } = await this.ctx.getSecret({ key })
-//     return value === null ? undefined : value
-//   }
-// }
+class ServiceContext extends ConfigContext {
+  @schema(
+    joiIdentifierMap(joiPrimitive())
+      .description("The outputs defined by the service (see individual plugins for details).")
+      .example(exampleOutputs),
+    )
+  public outputs: () => Promise<PrimitiveMap>
+
+  constructor(root: ConfigContext, garden: Garden, service: Service) {
+    super(root)
+    this.outputs = () => garden.actions.getServiceOutputs({ service })
+  }
+}
+
+class ModuleContext extends ConfigContext {
+  @schema(
+    Joi.string()
+      .description("The build path of the module.")
+      .example("/home/me/code/my-project/.garden/build/my-module"),
+  )
+  public buildPath: string
+
+  @schema(
+    joiIdentifierMap(joiPrimitive())
+      .description("The outputs defined by the module (see individual plugins for details).")
+      .example(exampleOutputs),
+    )
+  public outputs: PrimitiveMap
+
+  @schema(Joi.string().description("The local path of the module.").example("/home/me/code/my-project/my-module"))
+  public path: string
+
+  @schema(
+    joiIdentifierMap(ServiceContext.getSchema())
+      .description("Retrieve information about services that are defined in the project.")
+      .example({ "my-service": { outputs: exampleOutputs } }),
+  )
+  public services: Map<string, ServiceContext>
+
+  @schema(Joi.string().description("The current version of the module.").example(exampleVersion))
+  public version: string
+
+  constructor(root: ConfigContext, garden: Garden, module: Module) {
+    super(root)
+    this.buildPath = module.buildPath
+
+    this.outputs = module.outputs
+
+    this.path = module.path
+
+    // TODO: add "service" shorthand for single-service modules?
+
+    this.services = new Map(module.services.map((service) =>
+      <[string, ServiceContext]>[name, new ServiceContext(this, garden, service)],
+    ))
+
+    this.version = module.version.versionString
+  }
+}
+
+/**
+ * This context is available for template strings under the `module` key in configuration files.
+ * It is a superset of the context available under the `project.environments[].providers` key.
+ */
+export class ModuleConfigContext extends ProviderConfigContext {
+  @schema(
+    joiIdentifierMap(ModuleContext.getSchema())
+      .description("Retrieve information about modules that are defined in the project.")
+      .example({ "my-module": { path: "/home/me/code/my-project/my-module", version: exampleVersion } }),
+  )
+  public modules: Map<string, ModuleContext>
+
+  constructor(
+    garden: Garden,
+    providers: Provider[],
+    modules: Module[],
+  ) {
+    super(garden, providers)
+
+    const _this = this
+
+    this.environment = new EnvironmentContext(_this, garden.environmentName)
+
+    this.modules = new Map(modules.map((module) =>
+      <[string, ModuleContext]>[module.name, new ModuleContext(_this, garden, module)],
+    ))
+  }
+}

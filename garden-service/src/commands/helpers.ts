@@ -11,17 +11,20 @@ import dedent = require("dedent")
 import { uniq, flatten } from "lodash"
 import { Garden } from "../garden"
 import { Module } from "../types/module"
-import { prepareRuntimeContext, Service } from "../types/service"
+import { prepareRuntimeContext } from "../types/service"
+import { ServiceConfig } from "../config/service"
 import { LogEntry } from "../logger/log-entry"
 
 // Returns true if validation succeeded, false otherwise.
 export async function validateHotReloadOpt(
   garden: Garden, log: LogEntry, hotReloadServiceNames: string[],
 ): Promise<boolean> {
-  const incompatibleServices: Service[] = []
+  const incompatibleServices: ServiceConfig[] = []
 
-  for (const hotReloadService of await garden.getServices(hotReloadServiceNames)) {
-    if (!hotReloadService.module.spec.hotReload) {
+  for (const hotReloadService of await garden.getServiceConfigs(hotReloadServiceNames)) {
+    // FIXME: this needs to be at the native level, not in the spec!
+    const moduleConfig = await garden.getModuleConfigByService(hotReloadService.name)
+    if (!moduleConfig.spec.hotReload) {
       incompatibleServices.push(hotReloadService)
     }
   }

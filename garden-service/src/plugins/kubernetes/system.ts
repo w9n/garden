@@ -40,6 +40,7 @@ export async function getSystemGarden(provider: KubernetesProvider): Promise<Gar
             providers: [
               {
                 name: "local-kubernetes",
+                dependencies: [],
                 context: provider.config.context,
                 namespace: GARDEN_SYSTEM_NAMESPACE,
                 _system: systemSymbol,

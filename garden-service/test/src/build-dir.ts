@@ -69,16 +69,16 @@ describe("BuildDir", () => {
       await garden.clearBuilds()
       const modules = await garden.getModules()
 
-      await Bluebird.map(modules, async (module) => {
-        return garden.addTask(new BuildTask({
+      const tasks = await Bluebird.map(modules, async (module) => {
+        return new BuildTask({
           garden,
           log,
           module,
           force: true,
-        }))
+        })
       })
 
-      await garden.processTasks()
+      await garden.taskGraph.process(tasks)
 
       const buildDirD = await garden.buildDir.buildPath("module-d")
       const buildDirE = await garden.buildDir.buildPath("module-e")

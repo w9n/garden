@@ -7,52 +7,40 @@
  */
 
 import chalk from "chalk"
-import { BaseTask } from "../tasks/base"
-import { Garden } from "../garden"
-import { Task } from "../types/task"
-import { BuildTask } from "./build"
+import { BaseTask, ModuleTask } from "../tasks/base"
 import { DeployTask } from "./deploy"
-import { LogEntry } from "../logger/log-entry"
 import { RunTaskResult } from "../types/plugin/outputs"
 import { prepareRuntimeContext } from "../types/service"
-import { DependencyGraphNodeType } from "../dependency-graph"
+import { ModuleTaskParams } from "./base"
 
-export interface TaskTaskParams {
-  garden: Garden
-  log: LogEntry
-  task: Task
-  force: boolean
+export interface TaskTaskParams extends ModuleTaskParams {
+  taskName: string
   forceBuild: boolean
 }
 
-export class TaskTask extends BaseTask { // ... to be renamed soon.
+export class TaskTask extends ModuleTask<TaskTaskParams, RunTaskResult> { // ... to be renamed soon.
   type = "task"
-  depType: DependencyGraphNodeType = "task"
 
-  private task: Task
+  private taskName: string
   private forceBuild: boolean
 
-  constructor({ garden, log, task, force, forceBuild }: TaskTaskParams) {
-    super({ garden, log, force, version: task.module.version })
-    this.task = task
-    this.forceBuild = forceBuild
+  constructor(params: TaskTaskParams) {
+    super(params)
+    this.taskName = params.taskName
+    this.forceBuild = params.forceBuild
   }
 
   async getDependencies(): Promise<BaseTask[]> {
-
-    const buildTask = new BuildTask({
-      garden: this.garden,
-      log: this.log,
-      module: this.task.module,
-      force: this.forceBuild,
-    })
+    const buildTask = this.getBuildTask(this.forceBuild)
 
     const dg = await this.garden.getDependencyGraph()
-    const deps = await dg.getDependencies(this.depType, this.getName(), false)
+    const deps = dg.getDependencies("task", this.getName(), false)
 
     const deployTasks = deps.service.map(service => {
       return new DeployTask({
-        service,
+        moduleConfig: service.module.config,
+        version: service.version,
+        serviceName: service.name,
         log: this.log,
         garden: this.garden,
         force: false,
@@ -62,7 +50,9 @@ export class TaskTask extends BaseTask { // ... to be renamed soon.
 
     const taskTasks = deps.task.map(task => {
       return new TaskTask({
-        task,
+        moduleConfig: task.module.config,
+        taskName: task.name,
+        version: task.module.version,
         log: this.log,
         garden: this.garden,
         force: false,
@@ -86,7 +76,7 @@ export class TaskTask extends BaseTask { // ... to be renamed soon.
     const task = this.task
     const module = task.module
 
-    const log = this.log.info({
+    const log = this.garden.log.info({
       section: task.name,
       msg: "Running",
       status: "active",
@@ -94,7 +84,7 @@ export class TaskTask extends BaseTask { // ... to be renamed soon.
 
     // combine all dependencies for all services in the module, to be sure we have all the context we need
     const dg = await this.garden.getDependencyGraph()
-    const serviceDeps = (await dg.getDependencies(this.depType, this.getName(), false)).service
+    const serviceDeps = (await dg.getDependencies("task", this.getName(), false)).service
     const runtimeContext = await prepareRuntimeContext(this.garden, log, module, serviceDeps)
 
     let result: RunTaskResult

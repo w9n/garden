@@ -19,7 +19,7 @@ import {
 import { splitFirst } from "../util/util"
 import { ParameterError, RuntimeError } from "../exceptions"
 import { find, includes, pick } from "lodash"
-import { ServiceIngress, getIngressUrl } from "../types/service"
+import { ServiceIngress, getIngressUrl, resolveService } from "../types/service"
 import dedent = require("dedent")
 
 const callArgs = {
@@ -53,8 +53,8 @@ export class CallCommand extends Command<Args> {
     let [serviceName, path] = splitFirst(args.serviceAndPath, "/")
 
     // TODO: better error when service doesn't exist
-    const service = await garden.getService(serviceName)
-    const status = await garden.actions.getServiceStatus({ service, log })
+    const service = await resolveService(garden, serviceName)
+    const status = await garden.actions.getServiceStatus({ service })
 
     if (!includes(["ready", "outdated"], status.state)) {
       throw new RuntimeError(`Service ${service.name} is not running`, {

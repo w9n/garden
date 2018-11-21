@@ -14,13 +14,14 @@ import {
   handleTaskResults,
   StringsParameter,
 } from "./base"
-import { Module } from "../types/module"
 import { PublishTask } from "../tasks/publish"
 import { RuntimeError } from "../exceptions"
 import { TaskResults } from "../task-graph"
 import { Garden } from "../garden"
 import { LogEntry } from "../logger/log-entry"
 import { logHeader } from "../logger/util"
+import { ModuleConfig } from "../config/module"
+import * as Bluebird from "bluebird"
 import dedent = require("dedent")
 
 const publishArgs = {
@@ -64,9 +65,9 @@ export class PublishCommand extends Command<Args, Opts> {
   async action({ garden, log, args, opts }: CommandParams<Args, Opts>): Promise<CommandResult<TaskResults>> {
     logHeader({ log, emoji: "rocket", command: "Publish modules" })
 
-    const modules = await garden.getModules(args.modules)
+    const moduleConfigs = await garden.getModuleConfigs(args.modules)
 
-    const results = await publishModules(garden, log, modules, !!opts["force-build"], !!opts["allow-dirty"])
+    const results = await publishModules(garden, log, moduleConfigs, !!opts["force-build"], !!opts["allow-dirty"])
 
     return handleTaskResults(log, "publish", { taskResults: results })
   }
@@ -75,24 +76,23 @@ export class PublishCommand extends Command<Args, Opts> {
 export async function publishModules(
   garden: Garden,
   log: LogEntry,
-  modules: Module<any>[],
+  moduleConfigs: ModuleConfig[],
   forceBuild: boolean,
   allowDirty: boolean,
 ): Promise<TaskResults> {
-  for (const module of modules) {
-    const version = module.version
+  const tasks = await Bluebird.map(moduleConfigs, async (moduleConfig) => {
+    const version = await garden.resolveModuleVersion(moduleConfig)
 
     if (version.dirtyTimestamp && !allowDirty) {
       throw new RuntimeError(
-        `Module ${module.name} has uncommitted changes. ` +
+        `Module ${moduleConfig.name} has uncommitted changes. ` +
         `Please commit them, clean the module's source tree or set the --allow-dirty flag to override.`,
-        { moduleName: module.name, version },
+        { moduleName: moduleConfig.name, version },
       )
     }
 
-    const task = new PublishTask({ garden, log, module, forceBuild })
-    await garden.addTask(task)
-  }
+    return new PublishTask({ garden, log, version, moduleConfig, force: false, forceBuild })
+  })
 
-  return await garden.processTasks()
+  return garden.taskGraph.process(tasks)
 }

@@ -23,6 +23,7 @@ import { Module } from "../types/module"
 import { join } from "path"
 import { Garden } from "../garden"
 import { hashString } from "./util"
+import { ModuleConfig } from "../config/module"
 
 export type ExternalSourceType = "project" | "module"
 
@@ -44,8 +45,8 @@ export function hashRepoUrl(url: string) {
   return hashString(url, 10)
 }
 
-export function hasRemoteSource(module: Module): boolean {
-  return !!module.repositoryUrl
+export function hasRemoteSource(moduleConfig: ModuleConfig): boolean {
+  return !!moduleConfig.repositoryUrl
 }
 export function getConfigKey(type: ExternalSourceType): string {
   return type === "project" ? localConfigKeys.linkedProjectSources : localConfigKeys.linkedModuleSources

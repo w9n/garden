@@ -7,73 +7,54 @@
  */
 
 import chalk from "chalk"
-import { BuildTask } from "./build"
-import { Module } from "../types/module"
 import { PublishResult } from "../types/plugin/outputs"
-import { BaseTask } from "../tasks/base"
-import { Garden } from "../garden"
-import { DependencyGraphNodeType } from "../dependency-graph"
-import { LogEntry } from "../logger/log-entry"
+import { ModuleTask } from "../tasks/base"
+import { ModuleTaskParams } from "./base"
 
-export interface PublishTaskParams {
-  garden: Garden
-  log: LogEntry
-  module: Module
+interface Params extends ModuleTaskParams {
   forceBuild: boolean
 }
 
-export class PublishTask extends BaseTask {
+export class PublishTask extends ModuleTask<Params, PublishResult> {
   type = "publish"
-  depType: DependencyGraphNodeType = "publish"
 
-  private module: Module
-  private forceBuild: boolean
+  private readonly forceBuild: boolean
 
-  constructor({ garden, log, module, forceBuild }: PublishTaskParams) {
-    super({ garden, log, version: module.version })
-    this.module = module
-    this.forceBuild = forceBuild
-  }
-
-  async getDependencies() {
-    if (!this.module.allowPublish) {
-      return []
-    }
-    return [new BuildTask({
-      garden: this.garden,
-      log: this.log,
-      module: this.module,
-      force: this.forceBuild,
-    })]
-  }
-
-  getName() {
-    return this.module.name
+  constructor(params: Params) {
+    super(params)
+    this.forceBuild = params.forceBuild
   }
 
   getDescription() {
-    return `publishing module ${this.module.name}`
+    return `publishing module ${this.moduleConfig.name}`
   }
 
-  async process(): Promise<PublishResult> {
-    if (!this.module.allowPublish) {
-      this.log.info({
-        section: this.module.name,
+  async process() {
+    if (!this.moduleConfig.allowPublish) {
+      this.garden.log.info({
+        section: this.getName(),
         msg: "Publishing disabled",
         status: "active",
       })
       return { published: false }
     }
 
+    // Resolve dependencies.
+    const { module } = await this.resolveTasks({
+      module: this.resolveModuleTask,
+      build: this.getBuildTask(this.forceBuild),
+      providers: await this.getProviderTasks("publishModule"),
+    })
+
     const log = this.log.info({
-      section: this.module.name,
+      section: module.name,
       msg: "Publishing",
       status: "active",
     })
 
     let result: PublishResult
     try {
-      result = await this.garden.actions.publishModule({ module: this.module, log })
+      result = await this.garden.actions.publishModule({ module, log })
     } catch (err) {
       log.setError()
       throw err
