@@ -343,7 +343,8 @@ level `garden.yml` config.
 
 Examples:
 
-    garden link source my-source path/to/my-source # links my-source to its local version at the given path
+    garden link module my-source source/my-source     # links my-source to source/my-source relative to project root
+    garden link module my-source /tmp/path/my-source  # links my-source to /tmp/path/my-source
 
 ##### Usage
 
@@ -366,7 +367,8 @@ i.e. modules that specifiy a `repositoryUrl` in their `garden.yml` config file.
 
 Examples:
 
-    garden link module my-module path/to/my-module # links my-module to its local version at the given path
+    garden link module my-module source/my-module     # links my-module to source/my-module relative to project root
+    garden link module my-module /tmp/path/my-module  # links my-module to /tmp/path/my-module
 
 ##### Usage
 

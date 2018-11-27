@@ -46,7 +46,8 @@ export class LinkSourceCommand extends Command<Args> {
 
     Examples:
 
-        garden link source my-source path/to/my-source # links my-source to its local version at the given path
+        garden link module my-source source/my-source     # links my-source to source/my-source relative to project root
+        garden link module my-source /tmp/path/my-source  # links my-source to /tmp/path/my-source
   `
 
   async action({ garden, args }: CommandParams<Args>): Promise<CommandResult<LinkedSource[]>> {
@@ -78,7 +79,7 @@ export class LinkSourceCommand extends Command<Args> {
       sources: [{ name: sourceName, path: absPath }],
     })
 
-    garden.log.info(`Linked source ${sourceName}`)
+    garden.log.info(`Linked source ${sourceName} -> ${absPath}`)
 
     return { result: linkedProjectSources }
   }

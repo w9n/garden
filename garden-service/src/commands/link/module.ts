@@ -51,7 +51,8 @@ export class LinkModuleCommand extends Command<Args> {
 
     Examples:
 
-        garden link module my-module path/to/my-module # links my-module to its local version at the given path
+        garden link module my-module source/my-module     # links my-module to source/my-module relative to project root
+        garden link module my-module /tmp/path/my-module  # links my-module to /tmp/path/my-module
   `
 
   async action({ garden, args }: CommandParams<Args>): Promise<CommandResult<LinkedSource[]>> {
@@ -83,7 +84,7 @@ export class LinkModuleCommand extends Command<Args> {
       sources: [{ name: moduleName, path: absPath }],
     })
 
-    garden.log.info(`Linked module ${moduleName}`)
+    garden.log.info(`Linked module ${moduleName} -> ${absPath}`)
 
     return { result: linkedModuleSources }
 
