@@ -4,4 +4,3 @@ project:
     - name: local
       providers:
         - name: local-kubernetes
-#          defaultHostname: vote.local.app.garden
