@@ -17,3 +17,8 @@ module:
         - path: /
           port: http
           hostname: front-end.local.app.garden
+  tests:
+    - name: unit
+      command: [echo ok]
+    - name: integ
+      command: [echo ok]
