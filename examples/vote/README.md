@@ -29,35 +29,8 @@ open http://vote.local.app.garden/
 
 open http://vote.local.app.garden/result
 
-## Setup
-
-### Step 1 - Install mkcert
-
-If you don't have mkcert installed, follow the instructions [here](https://github.com/FiloSottile/mkcert#installation).
-
-### Step 2 - Generate a certificate
-
-Run `mkcert -install`
-
-then
-
-```sh
-mkcert local.app.garden '*.local.app.garden'
-```
-
-_Note: You may choose another hostname if you prefer, but you'll need to update the project `garden.yml` accordingly._
-
-### Step 3 - Configure the certificate in your Kubernetes installation
-
-Create a Kubernetes Secret with your generated certificate and key.
-
-```sh
-kubectl create secret -n default tls garden-tls --key local.app.garden+1-key.pem --cert local.app.garden+1.pem
-```
-
-
 ## Running
 
 ```sh
-garden dev --hot-reload=front-end
+garden dev --hot-reload=frontend
 ```
