@@ -19,6 +19,8 @@ module:
           hostname: frontend.local.app.garden
   tests:
     - name: unit
-      command: [echo ok]
+      command: [npm run test:unit]
     - name: integ
-      command: [echo ok]
+      command: [npm run test:integ]
+      dependencies:
+        - vote

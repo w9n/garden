@@ -4,10 +4,10 @@ import Vote from '@/components/Vote.vue';
 
 describe('Vote.vue', () => {
   it('renders props.msg when passed', () => {
-    const msg = 'new message';
+    const optionA = 'Cats';
     const wrapper = shallowMount(Vote, {
-      propsData: { msg },
+      propsData: { optionA },
     });
-    expect(wrapper.text()).to.include(msg);
+    expect(wrapper.text()).to.include('Cats');
   });
 });
