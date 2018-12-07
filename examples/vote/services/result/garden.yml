@@ -15,3 +15,8 @@ module:
         - name: ui
           protocol: TCP
           containerPort: 80
+  tests:
+    - name: integ
+      command: [echo ok]
+      dependencies:
+        - redis
