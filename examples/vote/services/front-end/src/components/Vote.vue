@@ -35,14 +35,13 @@ export default {
   },
   methods:{
     vote: function(v){
-      console.log(v);
       this.voteResult = v;
       const headers =   {
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Access-Control-Allow-Origin': '*',
       }
       var self = this;
-			axios.post('http://vote.local.app.garden/', "vote=" + this.voteResult,{ headers }).then(function(result){
-        console.log(result);
+			axios.post('http://vote.local.app.garden/vote/', "vote=" + this.voteResult,{ headers }).then(function(result){
         self.counter++;
       });
     }

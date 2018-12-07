@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, make_response, g
+from flask_cors import CORS
 from redis import Redis
 import os
 import socket
@@ -10,6 +11,7 @@ option_b = os.getenv('OPTION_B', "Dogs")
 hostname = socket.gethostname()
 
 app = Flask(__name__)
+CORS(app)
 
 def get_redis():
     if not hasattr(g, 'redis'):
@@ -19,6 +21,8 @@ def get_redis():
 @app.route("/vote/", methods=['POST','GET'])
 def vote():
     voter_id = hex(random.getrandbits(64))[2:-1]
+
+    app.logger.info("received request")
 
     vote = None
 
