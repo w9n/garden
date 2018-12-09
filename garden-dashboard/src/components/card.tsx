@@ -29,7 +29,7 @@ const Title = styled.h3`
 `
 
 const Card: React.SFC<CardProps> = ({ children, title }) => (
-  <Wrapper className="pt-1">
+  <Wrapper className="pt-1 mt-2">
     <div className="pl-1 pr-1 mb-1">
       <Title>{title}</Title>
     </div>

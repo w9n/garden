@@ -13,10 +13,12 @@ import Card from "./card"
 
 import { colors } from "../styles/variables"
 
+export type ColEl = string | React.ReactElement<any>
+
 interface Props {
   title: string
   rowHeaders: string[]
-  rows: string[][]
+  rows: ColEl[][]
 }
 
 const colStyle = `
@@ -54,9 +56,11 @@ const Table: React.SFC<Props> = props => (
       <tbody>
         {props.rows.map((row, idx) => (
           <tr key={idx}>
-            {row.map((col, cidx) => (
-              <Td key={cidx}>{col}</Td>
-            ))}
+            {row.map((col, cidx) => {
+              return (
+                <Td key={cidx}>{col}</Td>
+              )
+            })}
           </tr>
         ))}
       </tbody>
