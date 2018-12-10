@@ -7,6 +7,7 @@ describe('Vote.vue', () => {
     const optionA = 'Cats';
     const wrapper = shallowMount(Vote, {
       propsData: { optionA },
+      // propsData: { optionB },
     });
     expect(wrapper.text()).to.include('Cats');
   });

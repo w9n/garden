@@ -1,6 +1,7 @@
 module:
   description: Frontend
   name: frontend
+  # repositoryUrl: http://github.com/garden-io/garden...
   type: container
   hotReload:
     sync:
