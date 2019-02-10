@@ -1,0 +1,834 @@
+# Commands Reference
+
+Below is a list of Garden CLI commands and usage information.
+
+The commands should be run in a Garden project, and are always scoped to that project.
+
+Note: You can get a list of commands in the CLI by running `garden -h/--help`, and detailed help for each command using `garden <command> -h/--help`
+
+### Global options
+
+The following option flags can be used with any of the CLI commands:
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--root` | `-r` | string | Override project root directory \(defaults to working directory\). |
+| `--silent` | `-s` | boolean | Suppress log output. |
+| `--env` | `-e` | string | The environment \(and optionally namespace\) to work against. |
+| `--loglevel` | `-l` | `error` `warn` `info` `verbose` `debug` `silly` `0` `1` `2` `3` `4` `5` | Set logger level. Values can be either string or numeric and are prioritized from 0 to 5 \(highest to lowest\) as follows: error: 0, warn: 1, info: 2, verbose: 3, debug: 4, silly: 5. |
+| `--output` | `-o` | `json` `yaml` | Output command result in specified format \(note: disables progress logging and interactive functionality\). |
+| `--emoji` |  | boolean | Enable emoji in output \(defaults to true if the environment supports it\). |
+
+## garden build
+
+Build your modules.
+
+Builds all or specified modules, taking into account build dependency order. Optionally stays running and automatically builds modules if their source \(or their dependencies' sources\) change.
+
+Examples:
+
+```text
+garden build            # build all modules in the project
+garden build my-module  # only build my-module
+garden build --force    # force rebuild of modules
+garden build --watch    # watch for changes to code
+```
+
+### Usage
+
+```text
+garden build [modules] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `modules` | No | Specify module\(s\) to build. Use comma as a separator to specify multiple modules. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force` |  | boolean | Force rebuild of module\(s\). |
+| `--watch` | `-w` | boolean | Watch for changes in module\(s\) and auto-build. |
+
+## garden call
+
+Call a service ingress endpoint.
+
+Resolves the deployed ingress endpoint for the given service and path, calls the given endpoint and outputs the result.
+
+Examples:
+
+```text
+garden call my-container
+garden call my-container/some-path
+```
+
+Note: Currently only supports simple GET requests for HTTP/HTTPS ingresses.
+
+### Usage
+
+```text
+garden call <serviceAndPath> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `serviceAndPath` | Yes | The name of the service to call followed by the ingress path \(e.g. my-container/somepath\). |
+
+## garden delete secret
+
+Delete a secret from the environment.
+
+Returns with an error if the provided key could not be found by the provider.
+
+Examples:
+
+```text
+garden delete secret kubernetes somekey
+garden del secret local-kubernetes some-other-key
+```
+
+### Usage
+
+```text
+garden delete secret <provider> <key> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `provider` | Yes | The name of the provider to remove the secret from. |
+| `key` | Yes | The key of the configuration variable. Separate with dots to get a nested key \(e.g. key.nested\). |
+
+## garden delete environment
+
+Deletes a running environment.
+
+This will trigger providers to clear up any deployments in a Garden environment and reset it. When you then run `garden init`, the environment will be reconfigured.
+
+This can be useful if you find the environment to be in an inconsistent state, or need/want to free up resources.
+
+### Usage
+
+```text
+garden delete environment 
+```
+
+## garden delete service
+
+Deletes running services.
+
+Deletes \(i.e. un-deploys\) the specified services. Note that this command does not take into account any services depending on the deleted service, and might therefore leave the project in an unstable state. Running `garden deploy` will re-deploy any missing services.
+
+Examples:
+
+```text
+garden delete service my-service # deletes my-service
+```
+
+### Usage
+
+```text
+garden delete service <services> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `services` | Yes | The name\(s\) of the service\(s\) to delete. Use comma as a separator to specify multiple services. |
+
+## garden deploy
+
+Deploy service\(s\) to your environment.
+
+Deploys all or specified services, taking into account service dependency order. Also builds modules and dependencies if needed.
+
+Optionally stays running and automatically re-builds and re-deploys services if their module source \(or their dependencies' sources\) change.
+
+Examples:
+
+```text
+garden deploy                         # deploy all modules in the project
+garden deploy my-service              # only deploy my-service
+garden deploy service-a,service-b     # only deploy service-a and service-b
+garden deploy --force                 # force re-deploy of modules, even if they're already deployed
+garden deploy --watch                 # watch for changes to code
+garden deploy --watch --hot-reload=my-service # deploys all services, with hot reloading enabled for my-service
+garden deploy --env stage             # deploy your services to an environment called stage
+```
+
+### Usage
+
+```text
+garden deploy [services] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `services` | No | The name\(s\) of the service\(s\) to deploy \(skip to deploy all services\). Use comma as a separator to specify multiple services. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force` |  | boolean | Force redeploy of service\(s\). |
+| `--force-build` |  | boolean | Force rebuild of module\(s\). |
+| `--watch` | `-w` | boolean | Watch for changes in module\(s\) and auto-deploy. |
+| `--hot-reload` |  | array:string | The name\(s\) of the service\(s\) to deploy with hot reloading enabled. Use comma as a separator to specify multiple services. When this option is used, the command is run in watch mode \(i.e. implicitly assumes the --watch/-w flag\). |
+
+## garden dev
+
+Starts the garden development console.
+
+The Garden dev console is a combination of the `build`, `deploy` and `test` commands. It builds, deploys and tests all your modules and services, and re-builds, re-deploys and re-tests as you modify the code.
+
+Examples:
+
+```text
+garden dev
+garden dev --hot-reload=foo-service,bar-service # enable hot reloading for foo-service and bar-service
+```
+
+### Usage
+
+```text
+garden dev [options]
+```
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--hot-reload` |  | array:string | The name\(s\) of the service\(s\) to deploy with hot reloading enabled. Use comma as a separator to specify multiple services. |
+
+## garden exec
+
+Executes a command \(such as an interactive shell\) in a running service.
+
+Finds an active container for a deployed service and executes the given command within the container. Supports interactive shells.
+
+_NOTE: This command may not be supported for all module types._
+
+Examples:
+
+```text
+ garden exec my-service /bin/sh   # runs a shell in the my-service container
+```
+
+### Usage
+
+```text
+garden exec <service> <command> [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `service` | Yes | The service to exec the command in. |
+| `command` | Yes | The command to run. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--interactive` |  | boolean | Set to false to skip interactive mode and just output the command result |
+
+## garden get graph
+
+Outputs the dependency relationships specified in this project's garden.yml files.
+
+### Usage
+
+```text
+garden get graph 
+```
+
+## garden get config
+
+Outputs the fully resolved configuration for this project and environment.
+
+### Usage
+
+```text
+garden get config 
+```
+
+## garden get secret
+
+Get a secret from the environment.
+
+Returns with an error if the provided key could not be found.
+
+Examples:
+
+```text
+garden get secret kubernetes somekey
+garden get secret local-kubernetes some-other-key
+```
+
+### Usage
+
+```text
+garden get secret <provider> <key> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `provider` | Yes | The name of the provider to read the secret from. |
+| `key` | Yes | The key of the configuration variable. |
+
+## garden get status
+
+Outputs the status of your environment.
+
+### Usage
+
+```text
+garden get status 
+```
+
+## garden get tasks
+
+Lists the tasks defined in your project's modules.
+
+### Usage
+
+```text
+garden get tasks [tasks] 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `tasks` | No | Specify task\(s\) to list. Use comma as a separator to specify multiple tasks. |
+
+## garden init
+
+Initialize system, environment or other runtime components.
+
+This command needs to be run before first deploying a Garden project, and occasionally after updating Garden, plugins or project configuration.
+
+Examples:
+
+```text
+garden init
+garden init --force   # runs the init flows even if status checks report that the environment is ready
+```
+
+### Usage
+
+```text
+garden init [options]
+```
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force` |  | boolean | Force initalization of environment, ignoring the environment status check. |
+
+## garden link source
+
+Link a remote source to a local directory.
+
+After linking a remote source, Garden will read it from its local directory instead of from the remote URL. Garden can only link remote sources that have been declared in the project level `garden.yml` config.
+
+Examples:
+
+```text
+garden link source my-source path/to/my-source # links my-source to its local version at the given path
+```
+
+### Usage
+
+```text
+garden link source <source> <path> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `source` | Yes | Name of the source to link as declared in the project config. |
+| `path` | Yes | Path to the local directory that containes the source. |
+
+## garden link module
+
+Link a module to a local directory.
+
+After linking a remote module, Garden will read the source from the module's local directory instead of from the remote URL. Garden can only link modules that have a remote source, i.e. modules that specifiy a `repositoryUrl` in their `garden.yml` config file.
+
+Examples:
+
+```text
+garden link module my-module path/to/my-module # links my-module to its local version at the given path
+```
+
+### Usage
+
+```text
+garden link module <module> <path> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `module` | Yes | Name of the module to link. |
+| `path` | Yes | Path to the local directory that containes the module. |
+
+## garden logs
+
+Retrieves the most recent logs for the specified service\(s\).
+
+Outputs logs for all or specified services, and optionally waits for news logs to come in.
+
+Examples:
+
+```text
+garden logs               # prints latest logs from all services
+garden logs my-service    # prints latest logs for my-service
+garden logs -t            # keeps running and streams all incoming logs to the console
+```
+
+### Usage
+
+```text
+garden logs [services] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `services` | No | The name\(s\) of the service\(s\) to log \(skip to log all services\). Use comma as a separator to specify multiple services. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--follow` | `-f` | boolean | Continuously stream new logs from the service\(s\). |
+| `--tail` | `-t` | number | Number of lines to show for each service. Defaults to -1, showing all log lines. |
+
+## garden publish
+
+Build and publish module\(s\) to a remote registry.
+
+Publishes built module artifacts for all or specified modules. Also builds modules and dependencies if needed.
+
+Examples:
+
+```text
+garden publish                # publish artifacts for all modules in the project
+garden publish my-container   # only publish my-container
+garden publish --force-build  # force re-build of modules before publishing artifacts
+garden publish --allow-dirty  # allow publishing dirty builds (which by default triggers error)
+```
+
+### Usage
+
+```text
+garden publish [modules] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `modules` | No | The name\(s\) of the module\(s\) to publish \(skip to publish all modules\). Use comma as a separator to specify multiple modules. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force-build` |  | boolean | Force rebuild of module\(s\) before publishing. |
+| `--allow-dirty` |  | boolean | Allow publishing dirty builds \(with untracked/uncommitted changes\). |
+
+## garden run module
+
+Run an ad-hoc instance of a module.
+
+This is useful for debugging or ad-hoc experimentation with modules.
+
+Examples:
+
+```text
+garden run module my-container                                   # run an ad-hoc instance of a my-container container and attach to it
+garden run module my-container /bin/sh                           # run an interactive shell in a new my-container container
+garden run module my-container --interactive=false /some/script  # execute a script in my-container and return the output
+```
+
+### Usage
+
+```text
+garden run module <module> [command] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `module` | Yes | The name of the module to run. |
+| `command` | No | The command to run in the module. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--interactive` |  | boolean | Set to false to skip interactive mode and just output the command result. |
+| `--force-build` |  | boolean | Force rebuild of module before running. |
+
+## garden run service
+
+Run an ad-hoc instance of the specified service.
+
+This can be useful for debugging or ad-hoc experimentation with services.
+
+Examples:
+
+```text
+garden run service my-service   # run an ad-hoc instance of a my-service and attach to it
+```
+
+### Usage
+
+```text
+garden run service <service> [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `service` | Yes | The service to run. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force-build` |  | boolean | Force rebuild of module. |
+
+## garden run task
+
+Run a task \(in the context of its parent module\).
+
+This is useful for re-running tasks ad-hoc, for example after writing/modifying database migrations.
+
+Examples:
+
+```text
+garden run task my-db-migration   # run my-migration
+```
+
+### Usage
+
+```text
+garden run task <task> [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `task` | Yes | The name of the task to run. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--force-build` |  | boolean | Force rebuild of module before running. |
+
+## garden run test
+
+Run the specified module test.
+
+This can be useful for debugging tests, particularly integration/end-to-end tests.
+
+Examples:
+
+```text
+garden run test my-module integ            # run the test named 'integ' in my-module
+garden run test my-module integ --i=false  # do not attach to the test run, just output results when completed
+```
+
+### Usage
+
+```text
+garden run test <module> <test> [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `module` | Yes | The name of the module to run. |
+| `test` | Yes | The name of the test to run in the module. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--interactive` |  | boolean | Set to false to skip interactive mode and just output the command result. |
+| `--force-build` |  | boolean | Force rebuild of module before running. |
+
+## garden scan
+
+Scans your project and outputs an overview of all modules.
+
+### Usage
+
+```text
+garden scan 
+```
+
+## garden serve
+
+Starts the Garden HTTP API service - **Experimental**
+
+**Experimental**
+
+Starts an HTTP server that exposes Garden commands and events.
+
+### Usage
+
+```text
+garden serve [options]
+```
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--port` |  | number | The port number for the Garden service to listen on. |
+
+## garden set secret
+
+Set a secret value for a provider in an environment.
+
+These secrets are handled by each provider, and may for example be exposed as environment variables for services or mounted as files, depending on how the provider is implemented and configured.
+
+_Note: The value is currently always stored as a string._
+
+Examples:
+
+```text
+garden set secret kubernetes somekey myvalue
+garden set secret local-kubernets somekey myvalue
+```
+
+### Usage
+
+```text
+garden set secret <provider> <key> <value> 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `provider` | Yes | The name of the provider to store the secret with. |
+| `key` | Yes | A unique identifier for the secret. |
+| `value` | Yes | The value of the secret. |
+
+## garden test
+
+Test all or specified modules.
+
+Runs all or specified tests defined in the project. Also builds modules and dependencies, and deploys service dependencies if needed.
+
+Optionally stays running and automatically re-runs tests if their module source \(or their dependencies' sources\) change.
+
+Examples:
+
+```text
+garden test               # run all tests in the project
+garden test my-module     # run all tests in the my-module module
+garden test --name integ  # run all tests with the name 'integ' in the project
+garden test --force       # force tests to be re-run, even if they've already run successfully
+garden test --watch       # watch for changes to code
+```
+
+### Usage
+
+```text
+garden test [modules] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `modules` | No | The name\(s\) of the module\(s\) to test \(skip to test all modules\). Use comma as a separator to specify multiple modules. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--name` | `-n` | string | Only run tests with the specfied name \(e.g. unit or integ\). |
+| `--force` | `-f` | boolean | Force re-test of module\(s\). |
+| `--force-build` |  | boolean | Force rebuild of module\(s\). |
+| `--watch` | `-w` | boolean | Watch for changes in module\(s\) and auto-test. |
+
+## garden unlink source
+
+Unlink a previously linked remote source from its local directory.
+
+After unlinking a remote source, Garden will go back to reading it from its remote URL instead of its local directory.
+
+Examples:
+
+```text
+garden unlink source my-source  # unlinks my-source
+garden unlink source --all      # unlinks all sources
+```
+
+### Usage
+
+```text
+garden unlink source [sources] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `sources` | No | The name\(s\) of the source\(s\) to unlink. Use comma as a separator to specify multiple sources. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--all` | `-a` | boolean | Unlink all sources. |
+
+## garden unlink module
+
+Unlink a previously linked remote module from its local directory.
+
+After unlinking a remote module, Garden will go back to reading the module's source from its remote URL instead of its local directory.
+
+Examples:
+
+```text
+garden unlink module my-module  # unlinks my-module
+garden unlink module --all      # unlink all modules
+```
+
+### Usage
+
+```text
+garden unlink module [modules] [options]
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `modules` | No | The name\(s\) of the module\(s\) to unlink. Use comma as a separator to specify multiple modules. |
+
+### Options
+
+| Argument | Alias | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `--all` | `-a` | boolean | Unlink all modules. |
+
+## garden update-remote sources
+
+Update remote sources.
+
+Updates the remote sources declared in the project level `garden.yml` config file.
+
+Examples:
+
+```text
+garden update-remote sources            # update all remote sources
+garden update-remote sources my-source  # update remote source my-source
+```
+
+### Usage
+
+```text
+garden update-remote sources [sources] 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `sources` | No | The name\(s\) of the remote source\(s\) to update. Use comma as a separator to specify multiple sources. |
+
+## garden update-remote modules
+
+Update remote modules.
+
+Updates remote modules, i.e. modules that have a `repositoryUrl` field in their `garden.yml` config that points to a remote repository.
+
+Examples:
+
+```text
+garden update-remote modules            # update all remote modules in the project
+garden update-remote modules my-module  # update remote module my-module
+```
+
+### Usage
+
+```text
+garden update-remote modules [modules] 
+```
+
+### Arguments
+
+| Argument | Required | Description |
+| :--- | :--- | :--- |
+| `modules` | No | The name\(s\) of the remote module\(s\) to update. Use comma as a separator to specify multiple modules. |
+
+## garden update-remote all
+
+Update all remote sources and modules.
+
+Examples:
+
+```text
+garden update-remote all # update all remote sources and modules in the project
+```
+
+### Usage
+
+```text
+garden update-remote all 
+```
+
+## garden validate
+
+Check your garden configuration for errors.
+
+Throws an error and exits with code 1 if something's not right in your garden.yml files.
+
+### Usage
+
+```text
+garden validate 
+```
+
+## garden version
+
+Show's the current cli version.
+
+### Usage
+
+```text
+garden version 
+```
+
