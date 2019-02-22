@@ -31,6 +31,7 @@ import { isSubset } from "../../util/is-subset"
 import { LogEntry } from "../../logger/log-entry"
 import { V1ReplicationController, V1ReplicaSet } from "@kubernetes/client-node"
 import dedent = require("dedent")
+import { safeDump, safeLoad } from "js-yaml"
 
 export interface RolloutStatus {
   state: ServiceState
@@ -359,6 +360,11 @@ export async function waitForResources({ ctx, provider, serviceName, resources: 
     const statuses = await checkResourceStatuses(api, namespace, objects, prevStatuses)
 
     for (const status of statuses) {
+
+      if (status.state === "missing") {
+        console.log(loops, safeLoad(JSON.stringify(status)))
+      }
+
       if (status.lastError) {
         let msg = `Error deploying ${serviceName}: ${status.lastError}`
 
