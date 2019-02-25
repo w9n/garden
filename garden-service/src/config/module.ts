@@ -21,6 +21,7 @@ import {
 } from "./common"
 import { TestConfig, TestSpec } from "./test"
 import { TaskConfig, TaskSpec } from "./task"
+import { DEFAULT_API_VERSION } from "../constants"
 
 export interface BuildCopySpec {
   source: string
@@ -66,12 +67,12 @@ export interface ModuleSpec { }
 
 export interface BaseModuleSpec {
   apiVersion: string
+  name: string
+  path: string
   allowPublish: boolean
   build: BaseBuildSpec
   description?: string
   include?: string[]
-  name: string
-  path: string
   type: string
   repositoryUrl?: string
 }
@@ -91,8 +92,8 @@ export const baseBuildSpecSchema = Joi.object()
 export const baseModuleSpecSchema = Joi.object()
   .keys({
     apiVersion: Joi.string()
-      .default("garden.io/v0")
-      .only("garden.io/v0")
+      .default(DEFAULT_API_VERSION)
+      .only(DEFAULT_API_VERSION)
       .description("The schema version of this module's config (currently not used)."),
     kind: Joi.string().default("Module").only("Module"),
     type: joiIdentifier()
@@ -163,4 +164,8 @@ export const moduleConfigSchema = baseModuleSpecSchema
 
 export function serializeConfig(moduleConfig: ModuleConfig) {
   return stableStringify(moduleConfig)
+}
+
+export interface ModuleResource extends ModuleConfig {
+  kind: "Module"
 }

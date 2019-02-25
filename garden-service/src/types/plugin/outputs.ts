@@ -12,12 +12,25 @@ import { Module } from "../module"
 import { ServiceStatus } from "../service"
 import { moduleConfigSchema, ModuleConfig } from "../../config/module"
 import { DashboardPage, dashboardPagesSchema } from "../../config/dashboard"
-import { ProviderConfig, providerConfigBaseSchema, Provider } from "../../config/project"
+import { ProviderConfig, providerConfigBaseSchema } from "../../config/provider"
+import { joiArray } from "../../config/common"
+import { deline } from "../../util/string"
 
-export interface ConfigureProviderResult<T extends ProviderConfig = ProviderConfig> extends Provider<T> { }
+export interface ConfigureProviderResult<T extends ProviderConfig = ProviderConfig> {
+  config: T
+  moduleConfigs?: ModuleConfig[]
+}
 export const configureProviderResultSchema = Joi.object()
   .keys({
     config: providerConfigBaseSchema,
+    moduleConfigs: joiArray(moduleConfigSchema)
+      .description(deline`
+        Providers may return one or more module configs, that are included with the provider. This can be used for
+        modules that should always be built, or deployed as part of bootstrapping the provider.
+
+        They become part of the project graph like other modules, but need to be referenced with the provider name
+        as a prefix and a double dash, e.g. \`provider-name--module-name\`.
+      `),
   })
 
 export interface EnvironmentStatus {

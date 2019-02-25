@@ -20,7 +20,13 @@ import { KubernetesPluginContext } from "../kubernetes"
 
 export async function buildHelmModule({ ctx, module, log }: BuildModuleParams<HelmModule>): Promise<BuildResult> {
   const k8sCtx = <KubernetesPluginContext>ctx
-  const namespace = await getNamespace({ ctx: k8sCtx, log, provider: k8sCtx.provider, skipCreate: true })
+  const namespace = await getNamespace({
+    configStore: ctx.configStore,
+    log,
+    projectName: k8sCtx.projectName,
+    provider: k8sCtx.provider,
+    skipCreate: true,
+  })
   const context = ctx.provider.config.context
   const baseModule = getBaseModule(module)
 

@@ -23,11 +23,12 @@ describe("DeleteSecretCommand", () => {
     const key = "mykey"
     const value = "myvalue"
 
-    await garden.actions.setSecret({ log, key, value, pluginName })
+    const actions = await garden.getActionHandler()
+    await actions.setSecret({ log, key, value, pluginName })
 
     await command.action({ garden, log, args: { provider, key }, opts: {} })
 
-    expect(await garden.actions.getSecret({ log, pluginName, key })).to.eql({ value: null })
+    expect(await actions.getSecret({ log, pluginName, key })).to.eql({ value: null })
   })
 
   it("should throw on missing key", async () => {

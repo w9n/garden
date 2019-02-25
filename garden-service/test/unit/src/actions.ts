@@ -54,7 +54,7 @@ describe("ActionHelper", () => {
     const plugins = { "test-plugin": testPlugin, "test-plugin-b": testPluginB }
     garden = await makeTestGardenA(plugins)
     log = garden.log
-    actions = garden.actions
+    actions = await garden.getActionHandler()
     const graph = await garden.getConfigGraph()
     module = await graph.getModule("module-a")
     service = await graph.getService("service-a")
@@ -372,7 +372,8 @@ describe("ActionHelper", () => {
   describe("getActionHandler", () => {
     it("should return last configured handler for specified action type", async () => {
       const gardenA = await makeTestGardenA()
-      const handler = gardenA.actions.getActionHandler({ actionType: "prepareEnvironment" })
+      const actionsA = await gardenA.getActionHandler()
+      const handler = actionsA.getActionHandler({ actionType: "prepareEnvironment" })
 
       expect(handler["actionType"]).to.equal("prepareEnvironment")
       expect(handler["pluginName"]).to.equal("test-plugin-b")
@@ -380,7 +381,8 @@ describe("ActionHelper", () => {
 
     it("should optionally filter to only handlers for the specified module type", async () => {
       const gardenA = await makeTestGardenA()
-      const handler = gardenA.actions.getActionHandler({ actionType: "prepareEnvironment" })
+      const actionsA = await gardenA.getActionHandler()
+      const handler = actionsA.getActionHandler({ actionType: "prepareEnvironment" })
 
       expect(handler["actionType"]).to.equal("prepareEnvironment")
       expect(handler["pluginName"]).to.equal("test-plugin-b")
@@ -388,14 +390,16 @@ describe("ActionHelper", () => {
 
     it("should throw if no handler is available", async () => {
       const gardenA = await makeTestGardenA()
-      await expectError(() => gardenA.actions.getActionHandler({ actionType: "cleanupEnvironment" }), "parameter")
+      const actionsA = await gardenA.getActionHandler()
+      await expectError(() => actionsA.getActionHandler({ actionType: "cleanupEnvironment" }), "parameter")
     })
   })
 
   describe("getModuleActionHandler", () => {
     it("should return last configured handler for specified module action type", async () => {
       const gardenA = await makeTestGardenA()
-      const handler = gardenA.actions.getModuleActionHandler({ actionType: "deployService", moduleType: "test" })
+      const actionsA = await gardenA.getActionHandler()
+      const handler = actionsA.getModuleActionHandler({ actionType: "deployService", moduleType: "test" })
 
       expect(handler["actionType"]).to.equal("deployService")
       expect(handler["pluginName"]).to.equal("test-plugin-b")
@@ -403,8 +407,9 @@ describe("ActionHelper", () => {
 
     it("should throw if no handler is available", async () => {
       const gardenA = await makeTestGardenA()
+      const actionsA = await gardenA.getActionHandler()
       await expectError(
-        () => gardenA.actions.getModuleActionHandler({ actionType: "execInService", moduleType: "container" }),
+        () => actionsA.getModuleActionHandler({ actionType: "execInService", moduleType: "container" }),
         "parameter",
       )
     })

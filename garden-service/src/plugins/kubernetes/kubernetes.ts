@@ -11,7 +11,7 @@ import dedent = require("dedent")
 
 import { joiArray, joiIdentifier, joiProviderName } from "../../config/common"
 import { GardenPlugin } from "../../types/plugin/plugin"
-import { Provider, providerConfigBaseSchema, ProviderConfig } from "../../config/project"
+import { Provider, providerConfigBaseSchema, ProviderConfig } from "../../config/provider"
 import { helmHandlers } from "./helm/handlers"
 import { getSecret, setSecret, deleteSecret } from "./secrets"
 import { containerRegistryConfigSchema, ContainerRegistryConfig } from "../container/config"

@@ -20,7 +20,8 @@ export class GetStatusCommand extends Command {
   help = "Outputs the status of your environment."
 
   async action({ garden, log }: CommandParams): Promise<CommandResult<EnvironmentStatus>> {
-    const status = await garden.actions.getStatus({ log })
+    const actions = await garden.getActionHandler()
+    const status = await actions.getStatus({ log })
 
     // TODO: we should change the status format because this will remove services called "detail"
     const withoutDetail = deepFilter(status, (_, key) => key !== "detail")

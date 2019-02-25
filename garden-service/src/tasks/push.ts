@@ -13,7 +13,6 @@ import { Module } from "../types/module"
 import { PushResult } from "../types/plugin/outputs"
 import { BaseTask, TaskType } from "../tasks/base"
 import { Garden } from "../garden"
-import { DependencyGraphNodeType } from "../config-graph"
 import { LogEntry } from "../logger/log-entry"
 
 export interface PushTaskParams {
@@ -27,7 +26,6 @@ export interface PushTaskParams {
 
 export class PushTask extends BaseTask {
   type: TaskType = "push"
-  depType: DependencyGraphNodeType = "push"
 
   force: boolean
   private module: Module
@@ -44,7 +42,7 @@ export class PushTask extends BaseTask {
 
   async getDependencies() {
     const dg = await this.garden.getConfigGraph()
-    const deps = (await dg.getDependencies(this.depType, this.getName(), false)).build
+    const deps = (await dg.getDependencies("build", this.getName(), false)).build
 
     const buildTask = new BuildTask({
       garden: this.garden,
@@ -80,7 +78,8 @@ export class PushTask extends BaseTask {
   async process(): Promise<PushResult> {
     // avoid logging stuff if there is no push handler
     const defaultHandler = async () => ({ pushed: false })
-    const handler = await this.garden.actions.getModuleActionHandler({
+    const actions = await this.garden.getActionHandler()
+    const handler = await actions.getModuleActionHandler({
       moduleType: this.module.type,
       actionType: "pushModule",
       defaultHandler,
@@ -99,7 +98,7 @@ export class PushTask extends BaseTask {
 
     let result: PushResult
     try {
-      result = await this.garden.actions.pushModule({ module: this.module, log })
+      result = await actions.pushModule({ module: this.module, log })
     } catch (err) {
       log.setError()
       throw err

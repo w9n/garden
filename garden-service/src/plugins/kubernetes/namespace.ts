@@ -13,6 +13,7 @@ import { name as providerName } from "./kubernetes"
 import { AuthenticationError } from "../../exceptions"
 import { getPackageVersion } from "../../util/util"
 import { LogEntry } from "../../logger/log-entry"
+import { ConfigStore } from "../../config-store"
 
 const GARDEN_VERSION = getPackageVersion()
 type CreateNamespaceStatus = "pending" | "created"
@@ -53,9 +54,17 @@ export async function createNamespace(api: KubeApi, namespace: string) {
   })
 }
 
+interface GetNamespaceParams {
+  configStore: ConfigStore,
+  log: LogEntry,
+  projectName: string,
+  provider: KubernetesProvider,
+  suffix?: string,
+  skipCreate?: boolean,
+}
+
 export async function getNamespace(
-  { ctx, log, provider, suffix, skipCreate }:
-    { ctx: PluginContext, log: LogEntry, provider: KubernetesProvider, suffix?: string, skipCreate?: boolean },
+  { projectName, configStore: localConfigStore, log, provider, suffix, skipCreate }: GetNamespaceParams,
 ): Promise<string> {
   let namespace
 
@@ -64,7 +73,7 @@ export async function getNamespace(
   } else {
     // Note: The local-kubernetes always defines a namespace name, so this logic only applies to the kubernetes provider
     // TODO: Move this logic out to the kubernetes plugin init/validation
-    const localConfig = await ctx.localConfigStore.get()
+    const localConfig = await localConfigStore.get()
     const k8sConfig = localConfig.kubernetes || {}
     let { username, ["previous-usernames"]: previousUsernames } = k8sConfig
 
@@ -80,7 +89,7 @@ export async function getNamespace(
       )
     }
 
-    namespace = `${username}--${ctx.projectName}`
+    namespace = `${username}--${projectName}`
   }
 
   if (suffix) {
@@ -96,11 +105,22 @@ export async function getNamespace(
 }
 
 export async function getAppNamespace(ctx: PluginContext, log: LogEntry, provider: KubernetesProvider) {
-  return getNamespace({ ctx, log, provider })
+  return getNamespace({
+    configStore: ctx.configStore,
+    log,
+    projectName: ctx.projectName,
+    provider,
+  })
 }
 
 export function getMetadataNamespace(ctx: PluginContext, log: LogEntry, provider: KubernetesProvider) {
-  return getNamespace({ ctx, log, provider, suffix: "metadata" })
+  return getNamespace({
+    configStore: ctx.configStore,
+    log,
+    projectName: ctx.projectName,
+    provider,
+    suffix: "metadata",
+  })
 }
 
 export async function getAllNamespaces(api: KubeApi): Promise<string[]> {

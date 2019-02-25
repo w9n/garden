@@ -1,6 +1,6 @@
-# `maven-container` reference
+# `local-openfaas` reference
 
-Below is the schema reference for the `maven-container` provider. For an introduction to configuring a Garden project with providers, please look at our [configuration guide](../../using-garden/configuration-files.md).
+Below is the schema reference for the `local-openfaas` provider. For an introduction to configuring a Garden project with providers, please look at our [configuration guide](../../using-garden/configuration-files.md).
 
 The reference is divided into two sections. The [first section](#configuration-keys) lists and describes the available schema keys. The [second section](#complete-yaml-schema) contains the complete YAML schema.
 
@@ -225,7 +225,26 @@ Example:
 ```yaml
 environments:
   - providers:
-      - name: "maven-container"
+      - name: "openfaas"
+```
+### `environments[].providers[].hostname`
+[environments](#environments) > [providers](#environments[].providers[]) > hostname
+
+The hostname to configure for the function gateway.
+Defaults to the default hostname of the configured Kubernetes provider.
+
+Important: If you have other types of services, this should be different from their ingress hostnames,
+or the other services should not expose paths under /function and /system to avoid routing conflicts.
+
+| Type | Required |
+| ---- | -------- |
+| `string` | No
+
+Example:
+```yaml
+environments:
+  - providers:
+      - hostname: "functions.mydomain.com"
 ```
 
 
@@ -250,5 +269,6 @@ variables: {}
 environments:
   - providers:
       - environments:
-        name: maven-container
+        name: openfaas
+        hostname:
 ```

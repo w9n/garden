@@ -19,8 +19,10 @@ import { EnvironmentStatus, ServiceLogEntry, environmentStatusSchema } from "./o
 import { moduleConfigSchema } from "../../config/module"
 import { testConfigSchema } from "../../config/test"
 import { taskSchema } from "../../config/task"
-import { ProviderConfig, projectNameSchema, providerConfigBaseSchema } from "../../config/project"
 import { deline } from "../../util/string"
+import { ProviderConfig, providerConfigBaseSchema, Provider, providersSchema } from "../../config/provider"
+import { ConfigStore, configStoreSchema } from "../../config-store"
+import { projectNameSchema } from "../../config/project"
 
 export interface PluginActionContextParams {
   ctx: PluginContext
@@ -39,7 +41,8 @@ const actionParamsSchema = Joi.object()
   .keys({
     ctx: pluginContextSchema
       .required(),
-    log: logEntrySchema,
+    log: logEntrySchema
+      .required(),
   })
 
 export interface PluginModuleActionParamsBase<T extends Module = Module> extends PluginActionParamsBase {
@@ -77,12 +80,16 @@ export interface ConfigureProviderParams<T extends ProviderConfig = any> {
   config: T
   log: LogEntry
   projectName: string
+  dependencies: Provider[]
+  configStore: ConfigStore
 }
 export const configureProviderParamsSchema = Joi.object()
   .keys({
     config: providerConfigBaseSchema.required(),
     log: logEntrySchema,
     projectName: projectNameSchema,
+    dependencies: providersSchema,
+    configStore: configStoreSchema,
   })
 
 export interface GetEnvironmentStatusParams extends PluginActionParamsBase { }

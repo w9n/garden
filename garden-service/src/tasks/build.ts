@@ -12,7 +12,6 @@ import { Module, getModuleKey } from "../types/module"
 import { BuildResult } from "../types/plugin/outputs"
 import { BaseTask, TaskType } from "../tasks/base"
 import { Garden } from "../garden"
-import { DependencyGraphNodeType } from "../config-graph"
 import { LogEntry } from "../logger/log-entry"
 import { PushTask } from "./push"
 
@@ -27,7 +26,6 @@ export interface BuildTaskParams {
 
 export class BuildTask extends BaseTask {
   type: TaskType = "build"
-  depType: DependencyGraphNodeType = "build"
 
   private module: Module
   private fromWatch: boolean
@@ -42,7 +40,7 @@ export class BuildTask extends BaseTask {
 
   async getDependencies() {
     const dg = await this.garden.getConfigGraph()
-    const deps = (await dg.getDependencies(this.depType, this.getName(), false)).build
+    const deps = (await dg.getDependencies("build", this.getName(), false)).build
 
     return Bluebird.map(deps, async (m: Module) => {
       return new PushTask({
@@ -56,7 +54,7 @@ export class BuildTask extends BaseTask {
     })
   }
 
-  protected getName() {
+  getName() {
     return getModuleKey(this.module.name, this.module.plugin)
   }
 
@@ -66,6 +64,7 @@ export class BuildTask extends BaseTask {
 
   async process(): Promise<BuildResult> {
     const module = this.module
+    const actions = await this.garden.getActionHandler()
 
     const log = this.log.info({
       section: this.getName(),
@@ -82,7 +81,7 @@ export class BuildTask extends BaseTask {
 
     if (!this.force) {
       log.setState({ msg: `Getting build status...` })
-      const status = await this.garden.actions.getBuildStatus({ log: this.log, module })
+      const status = await actions.getBuildStatus({ log: this.log, module })
 
       if (status.ready) {
         logSuccess()
@@ -94,7 +93,7 @@ export class BuildTask extends BaseTask {
 
     let result: BuildResult
     try {
-      result = await this.garden.actions.build({
+      result = await actions.build({
         module,
         log,
       })

@@ -32,7 +32,7 @@ import {
 } from "./common"
 import { GardenPlugin } from "../../types/plugin/plugin"
 import { baseServiceSchema, CommonServiceSpec } from "../../config/service"
-import { Provider, providerConfigBaseSchema } from "../../config/project"
+import { Provider, providerConfigBaseSchema } from "../../config/provider"
 
 const gcfModuleSpecSchema = baseServiceSchema
   .keys({

@@ -83,7 +83,8 @@ export class RunModuleCommand extends Command<Args, Opts> {
       command: msg,
     })
 
-    await garden.actions.prepareEnvironment({ log })
+    const actions = await garden.getActionHandler()
+    await actions.prepareEnvironment({ log })
 
     const pushTask = new PushTask({ garden, log, module, force: opts["force-build"] })
     await garden.processTasks([pushTask])
@@ -96,7 +97,7 @@ export class RunModuleCommand extends Command<Args, Opts> {
 
     log.info("")
 
-    const result = await garden.actions.runModule({
+    const result = await actions.runModule({
       log,
       module,
       command,

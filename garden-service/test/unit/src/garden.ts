@@ -33,9 +33,10 @@ describe("Garden", () => {
 
     it("should initialize and add the action handlers for a plugin", async () => {
       const garden = await makeTestGardenA()
+      const actions = await garden.getActionHandler()
 
-      expect((<any>garden).actions.actionHandlers.prepareEnvironment["test-plugin"]).to.be.ok
-      expect((<any>garden).actions.actionHandlers.prepareEnvironment["test-plugin-b"]).to.be.ok
+      expect((<any>actions).actionHandlers.prepareEnvironment["test-plugin"]).to.be.ok
+      expect((<any>actions).actionHandlers.prepareEnvironment["test-plugin-b"]).to.be.ok
     })
 
     it("should initialize with MOCK_CONFIG", async () => {
@@ -45,19 +46,53 @@ describe("Garden", () => {
 
     it("should parse and resolve the config from the project root", async () => {
       const garden = await makeTestGardenA()
+      const projectRoot = garden.projectRoot
 
       expect(garden.projectName).to.equal("test-project-a")
-      expect(garden.environment).to.eql({
-        name: "local",
-        providers: [
-          { name: "exec", config: { name: "exec" } },
-          { name: "container", config: { name: "container" } },
-          { name: "test-plugin", config: { name: "test-plugin" } },
-          { name: "test-plugin-b", config: { name: "test-plugin-b" } },
-        ],
-        variables: {
-          some: "variable",
+
+      expect(await garden.resolveProviders()).to.equal([
+        {
+          name: "exec",
+          config: {
+            name: "exec",
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
         },
+        {
+          name: "container",
+          config: {
+            name: "container",
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
+        },
+        {
+          name: "test-plugin",
+          config: {
+            name: "test-plugin",
+            environments: ["local"],
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
+        },
+        {
+          name: "test-plugin-b",
+          config: {
+            name: "test-plugin-b",
+            environments: ["local"],
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
+        },
+      ])
+
+      expect(garden.variables).to.eql({
+        some: "variable",
       })
     })
 
@@ -72,17 +107,39 @@ describe("Garden", () => {
       delete process.env.TEST_PROVIDER_TYPE
       delete process.env.TEST_VARIABLE
 
-      expect(garden.environment).to.eql({
-        name: "local",
-        providers: [
-          { name: "exec", config: { name: "exec" } },
-          { name: "container", config: { name: "container" } },
-          { name: "test-plugin", config: { name: "test-plugin" } },
-        ],
-        variables: {
-          "some": "banana",
-          "service-a-build-command": "OK",
+      expect(await garden.resolveProviders()).to.equal([
+        {
+          name: "exec",
+          config: {
+            name: "exec",
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
         },
+        {
+          name: "container",
+          config: {
+            name: "container",
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
+        },
+        {
+          name: "test-plugin",
+          config: {
+            name: "test-plugin",
+            path: projectRoot,
+          },
+          dependencies: [],
+          moduleConfigs: [],
+        },
+      ])
+
+      expect(garden.variables).to.eql({
+        "some": "banana",
+        "service-a-build-command": "OK",
       })
     })
 
@@ -90,7 +147,7 @@ describe("Garden", () => {
       await expectError(async () => Garden.factory(projectRootA, { environmentName: "bla" }), "parameter")
     })
 
-    it("should throw if namespace starts with 'garden-'", async () => {
+    it("should throw if environment starts with 'garden-'", async () => {
       await expectError(async () => Garden.factory(projectRootA, { environmentName: "garden-bla" }), "parameter")
     })
 
@@ -117,6 +174,54 @@ describe("Garden", () => {
       const plugins = { foo: pluginPath }
       const projectRoot = join(dataDir, "test-project-empty")
       await expectError(async () => Garden.factory(projectRoot, { plugins }), "plugin")
+    })
+  })
+
+  describe("resolveProviderConfigs", () => {
+    it("should include the module's relative path in the error message for invalid config", async () => {
+      throw new Error("TODO")
+      // const projectPath = resolve(dataDir, "test-project-invalid-config")
+      // await expectError(
+      //   async () => await loadConfig(projectPath, resolve(projectPath, "invalid-config-module")),
+      //   (err) => {
+      //     expect(err.message).to.match(/invalid-config-module\/garden.yml/)
+      //   })
+    })
+
+    it("should pass through a basic provider config", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should call a configureProvider handler if applicable", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should give a readable error if provider configs have invalid template strings", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should give a readable error if providers reference non-existent providers", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should add plugin modules if returned by the provider", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should throw if plugins have declared circular dependencies", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should throw if provider configs have implicit circular dependencies", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should apply default values from a plugin's configuration schema is specified", async () => {
+      throw new Error("TODO")
+    })
+
+    it("should throw if a config doesn't match a plugin's configuration schema", async () => {
+      throw new Error("TODO")
     })
   })
 
@@ -200,6 +305,10 @@ describe("Garden", () => {
       const repoUrlHash = hashRepoUrl(module!.repositoryUrl!)
 
       expect(module!.path).to.equal(join(projectRoot, ".garden", "sources", "module", `module-a--${repoUrlHash}`))
+    })
+
+    it("should set default values properly", async () => {
+      throw new Error("TODO")
     })
   })
 
@@ -312,7 +421,7 @@ describe("Garden", () => {
         name: "source-a",
         path: localPath,
       }]
-      await garden.localConfigStore.set(["linkedProjectSources"], linked)
+      await garden.configStore.set(["linkedProjectSources"], linked)
 
       const path = await garden.loadExtSourcePath({
         name: "source-a",
@@ -332,7 +441,7 @@ describe("Garden", () => {
         name: "module-a",
         path: localPath,
       }]
-      await garden.localConfigStore.set(["linkedModuleSources"], linked)
+      await garden.configStore.set(["linkedModuleSources"], linked)
 
       const path = await garden.loadExtSourcePath({
         name: "module-a",

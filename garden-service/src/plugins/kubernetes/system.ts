@@ -7,7 +7,7 @@
  */
 
 import { join } from "path"
-import { STATIC_DIR } from "../../constants"
+import { STATIC_DIR, DEFAULT_API_VERSION } from "../../constants"
 import { Garden } from "../../garden"
 import { KubernetesProvider } from "./kubernetes"
 
@@ -24,31 +24,22 @@ export async function getSystemGarden(provider: KubernetesProvider): Promise<Gar
   return Garden.factory(systemProjectPath, {
     environmentName: "default",
     config: {
-      dirname: "system",
       path: systemProjectPath,
-      project: {
-        apiVersion: "garden.io/v0",
-        name: systemNamespace,
-        environmentDefaults: {
-          providers: [],
-          variables: {},
+      apiVersion: DEFAULT_API_VERSION,
+      name: systemNamespace,
+      defaultEnvironment: "default",
+      environments: [
+        { name: "default", variables: {} },
+      ],
+      providers: [
+        {
+          name: "local-kubernetes",
+          context: provider.config.context,
+          namespace: systemNamespace,
+          _system: systemSymbol,
         },
-        defaultEnvironment: "default",
-        environments: [
-          {
-            name: "default",
-            providers: [
-              {
-                name: "local-kubernetes",
-                context: provider.config.context,
-                namespace: systemNamespace,
-                _system: systemSymbol,
-              },
-            ],
-            variables: {},
-          },
-        ],
-      },
+      ],
+      variables: {},
     },
   })
 }
