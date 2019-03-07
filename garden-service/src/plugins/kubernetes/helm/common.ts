@@ -54,22 +54,12 @@ export async function getChartResources(ctx: PluginContext, module: Module, log:
 
   return objects
     .filter(obj => {
-      if (obj === null) {
-        return false
-      }
-
       const helmHook = getAnnotation(obj, "helm.sh/hook")
       if (helmHook && helmHook.startsWith("test-")) {
         return false
       }
 
       return true
-    })
-    .map((obj) => {
-      if (!obj.metadata.annotations) {
-        obj.metadata.annotations = {}
-      }
-      return obj
     })
 }
 
@@ -310,4 +300,14 @@ async function renderHelmTemplateString(
  */
 function loadTemplate(template: string) {
   return loadAll(template, undefined, { json: true })
+    .filter(obj => obj !== null)
+    .map((obj) => {
+      if (!obj.metadata) {
+        obj.metadata = {}
+      }
+      if (!obj.metadata.annotations) {
+        obj.metadata.annotations = {}
+      }
+      return obj
+    })
 }
