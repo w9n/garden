@@ -501,7 +501,7 @@ export class ConfigGraph {
 const renderedNodeTypeMap = {
   build: "build",
   service: "deploy",
-  task: "runTask",
+  task: "task",
   test: "test",
   push: "push",
   publish: "publish",

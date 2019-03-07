@@ -147,7 +147,7 @@ export const containerHelpers = {
 
   async dockerCli(module: ContainerModule, args: string[]) {
     // TODO: use dockerode instead of CLI
-    return execa.stdout("docker", args, { cwd: module.buildPath, maxBuffer: 1024 * 1024 })
+    return execa.stdout("docker", args, { cwd: module.buildPath, maxBuffer: 10 * 1024 * 1024 })
   },
 
   async hasDockerfile(module: ContainerModule) {

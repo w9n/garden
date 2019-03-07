@@ -270,11 +270,11 @@ function deploymentConfig(service: Service, configuredReplicas: number, namespac
 function configureHealthCheck(container, spec): void {
 
   container.readinessProbe = {
-    initialDelaySeconds: 10,
-    periodSeconds: 5,
+    initialDelaySeconds: 2,
+    periodSeconds: 1,
     timeoutSeconds: 3,
-    successThreshold: 2,
-    failureThreshold: 5,
+    successThreshold: 1,
+    failureThreshold: 60,
   }
 
   container.livenessProbe = {
