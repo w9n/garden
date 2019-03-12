@@ -1,0 +1,17 @@
+module:
+  name: go-service
+  description: Go service container
+  type: container
+  hotReload:
+    sync:
+      - target: /go/src/github.com/perriea/webserver
+        source: webserver
+  services:
+    - name: go-service
+      ports:
+        - name: http
+          containerPort: 8080
+          servicePort: 80
+      ingresses:
+        - path: /hello-go
+          port: http

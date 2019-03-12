@@ -1,0 +1,6 @@
+project:
+  name: go-hot
+  environments:
+    - name: local
+      providers:
+        - name: local-kubernetes
