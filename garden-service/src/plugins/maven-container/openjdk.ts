@@ -9,14 +9,16 @@
 import { Library, LibraryPlatformSpec } from "../../util/ext-tools"
 
 const jdk8Version = "jdk8u202-b08"
+const defaultTargetPath = [jdk8Version, "Contents", "Home"]
 
-function jdk8Spec(filename: string, sha256: string): LibraryPlatformSpec {
+function jdk8Spec(filename: string, sha256: string, targetPath: string[] = defaultTargetPath): LibraryPlatformSpec {
   return {
     url: `https://github.com/AdoptOpenJDK/openjdk8-binaries/releases/download/${jdk8Version}/${filename}`,
     sha256,
     extract: {
       format: "tar",
-      targetPath: [jdk8Version, "Contents", "Home"],
+      targetPath,
+      // targetPath: [jdk8Version, "Contents", "Home"],
     },
   }
 }
@@ -43,6 +45,7 @@ export const openJdks: { [version: number]: Library } = {
       linux: jdk8Spec(
         "OpenJDK8U-jdk_x64_linux_hotspot_8u202b08.tar.gz",
         "f5a1c9836beb3ca933ec3b1d39568ecbb68bd7e7ca6a9989a21ff16a74d910ab",
+        [jdk8Version],
       ),
       win32: jdk8Spec(
         "OpenJDK8U-jdk_x64_windows_hotspot_8u202b08.zip",
