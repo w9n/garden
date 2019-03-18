@@ -85,16 +85,18 @@ export async function getRemoteEnvironmentStatus({ ctx, log }: GetEnvironmentSta
 
   await prepareNamespaces({ ctx: k8sCtx, log })
 
-  const ready = (await checkTillerStatus(k8sCtx, k8sCtx.provider, log)) === "ready"
+  const ts = await checkTillerStatus(k8sCtx, k8sCtx.provider, log)
+  let ready = (await checkTillerStatus(k8sCtx, k8sCtx.provider, log)) === "ready"
+  console.log("tiller", ts)
 
   // Note: We don't need the system namespaces for remote k8s for now
 
-  // const api = new KubeApi(k8sCtx.provider.config.context)
-  // const contextForLog = `Checking environment status for plugin "kubernetes"`
-  // const sysNamespaceUpToDate = await systemNamespaceUpToDate(api, log, contextForLog)
-  // if (!sysNamespaceUpToDate) {
-  //   ready = false
-  // }
+  const api = new KubeApi(k8sCtx.provider.config.context)
+  const contextForLog = `Checking environment status for plugin "kubernetes"`
+  const sysNamespaceUpToDate = await systemNamespaceUpToDate(api, log, contextForLog)
+  if (!sysNamespaceUpToDate) {
+    ready = false
+  }
 
   return {
     ready,
@@ -186,13 +188,13 @@ export async function prepareRemoteEnvironment({ ctx, log }: PrepareEnvironmentP
 
   // Note: We don't need the system namespaces for remote k8s for now
 
-  // const provider = k8sCtx.provider
-  // const api = new KubeApi(provider.config.context)
-  // const contextForLog = `Preparing environment for plugin "kubernetes"`
-  // if (!await systemNamespaceUpToDate(api, log, contextForLog)) {
-  //   await recreateSystemNamespaces(api, log)
-  // }
-  // await installTiller(k8sCtx, provider, log)
+  const provider = k8sCtx.provider
+  const api = new KubeApi(provider.config.context)
+  const contextForLog = `Preparing environment for plugin "kubernetes"`
+  if (!await systemNamespaceUpToDate(api, log, contextForLog)) {
+    await recreateSystemNamespaces(api, log)
+  }
+  await installTiller(k8sCtx, provider, log)
 
   return {}
 }
