@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docker-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    limits:
+      storage: {{ .Values.storage.limit }}
+    requests:
+      storage: {{ .Values.storage.request }}

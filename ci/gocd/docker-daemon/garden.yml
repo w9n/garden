@@ -1,0 +1,4 @@
+kind: Module
+type: helm
+name: docker-daemon
+description: The docker daemon to use in the cluster
