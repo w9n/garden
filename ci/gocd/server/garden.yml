@@ -1,0 +1,27 @@
+kind: Module
+description: GoCD server chart
+name: gocd-server
+type: helm
+chart: stable/gocd
+values:
+  server:
+    env:
+      extraEnvVars:
+        - name: GOCD_PLUGIN_INSTALL_github-pr-status
+          value: https://github.com/gocd-contrib/gocd-build-status-notifier/releases/download/1.5/github-pr-status-1.5.jar
+        - name: GOCD_PLUGIN_INSTALL_github-pr-poller
+          value: https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases/download/v1.4.0-RC2/github-pr-poller-1.4.0-RC2.jar
+    ingress:
+      tls:
+      - secretName: gocd-tls-secret
+    persistence:
+      enabled: true
+      extraVolumeMounts:
+        - name: gocd-auth
+          mountPath: /etc/config/gocd/
+          readOnly: true
+      extraVolumes:
+        - name: gocd-auth
+          secret:
+            secretName: gocd-auth
+            defaultMode: 0744

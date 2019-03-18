@@ -1,0 +1,24 @@
+kind: Project
+name: gocd
+defaultEnvironment: remote
+environments:
+  - name: local
+    providers:
+    - name: local-kubernetes
+  - name: remote
+    providers:
+      - name: kubernetes
+        context: gke_garden-dev-200012_europe-west1-b_garden-ci
+        defaultHostname: ci-1.sys.garden
+        namespace: gocd
+        forceSsl: true
+        tlsCertificates:
+        - name: gocd-tls-secret
+          secretRef:
+            name: gocd-tls-secret
+            namespace: default
+        deploymentRegistry:
+          # The hostname of the registry, e.g. gcr.io for GCR (Google Container Registry)
+          hostname: eu.gcr.io
+          # Namespace to use in the registry for this project. For GCR, use the project ID where your cluster is.
+          namespace: garden-dev-200012
