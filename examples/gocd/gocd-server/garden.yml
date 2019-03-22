@@ -1,0 +1,19 @@
+kind: Module
+name: gocd-server
+type: helm
+chart: stable/gocd
+releaseName: gocd
+values:
+  server:
+    # This shouldn't be set to false but deployment fails otherwise with:
+    # PostStartHookError: command '/bin/bash /preconfigure_server.sh' exited with 22:
+    # curl: (7) Failed to connect to localhost port 8153: Connection refused
+    shouldPreconfigure: false
+    service:
+      type: LoadBalancer
+    env:
+      extraEnvVars:
+        - name: GOCD_PLUGIN_INSTALL_github-pr-status
+          value: https://github.com/gocd-contrib/gocd-build-status-notifier/releases/download/1.5/github-pr-status-1.5.jar
+        - name: GOCD_PLUGIN_INSTALL_github-pr-poller
+          value: https://github.com/ashwanthkumar/gocd-build-github-pull-requests/releases/download/v1.4.0-RC2/github-pr-poller-1.4.0-RC2.jar

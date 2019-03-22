@@ -1,0 +1,7 @@
+kind: Project
+name: gocd
+environments:
+  - name: local
+    providers:
+      - name: local-kubernetes
+        setupIngressController: false

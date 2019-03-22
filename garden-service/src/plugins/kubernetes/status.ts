@@ -31,6 +31,7 @@ import { isSubset } from "../../util/is-subset"
 import { LogEntry } from "../../logger/log-entry"
 import { V1ReplicationController, V1ReplicaSet } from "@kubernetes/client-node"
 import dedent = require("dedent")
+import { safeLoad } from "js-yaml"
 
 interface WorkloadStatus {
   state: ServiceState
@@ -367,6 +368,10 @@ export async function waitForResources({ ctx, provider, serviceName, resources: 
     const statuses = await checkResourceStatuses(api, namespace, objects, log, prevStatuses)
 
     for (const status of statuses) {
+
+      // Uncomment to observe GoCD deployment error
+      // console.log(loops, safeLoad(JSON.stringify(status)))
+
       if (status.lastError) {
         let msg = `Error deploying ${serviceName}: ${status.lastError}`
 
