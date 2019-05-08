@@ -14,7 +14,7 @@ import styled from "@emotion/styled"
 import Card from "../components/card"
 import { colors } from "../styles/variables"
 import { RenderedNode } from "garden-cli/src/config-graph"
-import { ErrorNotification } from "./notifications"
+import { WarningNotification } from "./notifications"
 import { ActionIcon } from "./ActionIcon"
 
 const Term = styled.div`
@@ -121,7 +121,7 @@ export const InfoPane: React.FC<Props> = ({
     )
   } else if (output === null) {
     // Output explictly set to null means that the data was  fetched but the result was empty
-    outputEl = <ErrorNotification>No test output</ErrorNotification>
+    outputEl = <WarningNotification>No test output</WarningNotification>
   }
 
   return (

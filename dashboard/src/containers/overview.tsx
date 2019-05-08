@@ -29,6 +29,9 @@ const Modules = styled.div`
 
 export type ModuleModel = {
   name: string;
+  type: string;
+  path: string;
+  description?: string;
   services: ServiceModel[];
 }
 export type ServiceModel = {
@@ -63,6 +66,9 @@ export default () => {
     // fill modules with services names
     modules = config.data.moduleConfigs.map(moduleConfig => ({
       name: moduleConfig.name,
+      type: moduleConfig.type,
+      path: moduleConfig.path,
+      description: moduleConfig.description,
       services: moduleConfig.serviceConfigs.map(service => ({
         name: service.name,
         isLoading: true,

@@ -15,7 +15,6 @@ import { colors } from "../styles/variables"
 export const ExternalLink = styled.a`
   text-decoration: underline;
   &:visited {
-    color: ${colors.gardenGreenDark}
   }
   &:hover {
     color: ${colors.gardenPink}

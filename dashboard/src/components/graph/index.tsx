@@ -111,7 +111,7 @@ function drawChart(
   g.nodes().forEach(function(v) {
     const node = g.node(v)
     // Round the corners of the nodes
-    node.rx = node.ry = 5
+    node.rx = node.ry = 4
     // Remove node padding
     node.paddingBottom = 0
     node.paddingTop = 0
@@ -468,9 +468,19 @@ class Chart extends Component<Props, State> {
                     color: ${colors.gardenPink};
                   `}
               >
-                --{" "}
+                —{" "}
               </span>
               Pending
+              </Span>
+            <Span>
+              <span
+                className={css`
+                    color: ${colors.gardenPink};
+                  `}
+              >
+                --{" "}
+              </span>
+              Processing
               </Span>
             <Span>
               <span

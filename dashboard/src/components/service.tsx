@@ -17,20 +17,20 @@ import { colors } from "../styles/variables"
 import { Facebook } from "react-content-loader"
 
 const Service = styled.div`
-  width: 17rem;
+  width: 18rem;
   height: 13rem;
   background-color: white;
-  margin-bottom: 1rem;
-  box-shadow: 0px 1px 5px rgba(0, 0, 0, .2),
-    0px 3px 4px rgba(255, 255, 255, .12), 0px 2px 4px rgb(255, 255, 255);
   margin-right: 1rem;
+  box-shadow: 0px 0px 16px rgba(0, 0, 0, 0.14);
+  border-radius: 4px;
+
   &:last-of-type {
     margin-right: 0;
   }
 `
 const Header = styled.div`
   width: 100%;
-  padding: .4rem .75rem;
+  padding: .6rem .75rem;
   border-bottom: 1px solid #c4c4c4;
   height: 3rem;
 `
@@ -49,16 +49,23 @@ const Fields = styled.div`
 `
 const Field = styled.div`
   padding-bottom: .5rem;
+  max-width: 17rem;
 `
-const Label = styled.div`
-  font-size: .75rem;
-  line-height: 1rem;
-  color: #878787;
+
+const Key = styled.div`
+  padding-right: .5rem;
+  font-size: 13px;
+  line-height: 19px;
+  letter-spacing: 0.01em;
+  color: #4C5862;
+  opacity: 0.5;
 `
+
 const Value = styled.div`
-  font-size: 1rem;
-  line-height: 1.4rem;
-  color: #4f4f4f;
+  font-size: 13px;
+  line-height: 19px;
+  letter-spacing: 0.01em;
+  color: #4C5862;
 `
 
 const Content = styled.div`
@@ -79,17 +86,22 @@ const State = styled.div<StateProps>`
   background-color: ${props => (props && props.state && colors.status[props.state] || colors.gardenGrayLight)};
   display: flex;
   align-items: center;
+  margin-top: -0.5rem;
 `
 
 const Tag = styled.div`
-  font-size: .56rem;
   display: flex;
   align-items: center;
-  color: #bcbcbc;
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 10px;
+  text-align: right;
+  letter-spacing: 0.01em;
+  color: #90A0B7;
 `
 const Name = styled.div`
-  height: 1.5rem;
-  font-size: 1.25rem;
+  height: 1rem;
+  font-size: 0.9375rem;
   color: rgba(0, 0, 0, .87);
 `
 
@@ -100,13 +112,16 @@ const Row = styled.div`
 
 interface ServiceProp {
   service: ServiceModel
+  className?: string
 }
+
 export default ({
   service: { name, ingresses, state, isLoading },
+  className,
 }: ServiceProp) => {
 
   return (
-    <Service>
+    <Service className={className}>
       <Header>
         <Tag>SERVICE</Tag>
         <Row>
@@ -123,11 +138,11 @@ export default ({
         {!isLoading && (
           <Fields>
             <Field>
-              <Label>State</Label>
+              <Key>State</Key>
               <Value>{state}</Value>
             </Field>
             <Field>
-              <Label>Ingresses</Label>
+              <Key>Ingresses</Key>
               <Ingresses ingresses={ingresses} />
             </Field>
           </Fields>

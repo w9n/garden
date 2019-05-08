@@ -33,9 +33,10 @@ export function timeConversion(millisec) {
   return timeFormatted
 }
 
-export const truncateMiddle = (str) => {
-  if (str.length > 35) {
-    return str.substr(0, 16) + "..." + str.substr(str.length - 16, str.length)
+export const truncateMiddle = (str: string, resLength: number = 35) => {
+  if (str.length > resLength) {
+    const middle = Math.ceil(resLength / 2)
+    return str.substr(0, middle) + "..." + str.substr(str.length - middle, str.length)
   }
 
   return str
